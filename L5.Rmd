@@ -29,3 +29,9 @@ knitr::opts_chunk$set(echo = TRUE)
 -   P(1) \> 0.5 $\rightarrow$ predict yes (i.e. will pass exam)
 
 -   P(1) \< 0.5 $\rightarrow$ predict no (i.e. will not pass exam)
+
+## KNN
+
+-   For k = 10 with given holdout (i.e. 1000), run many tests with random holdout
+
+-   Average error to measure performance for k = 10
