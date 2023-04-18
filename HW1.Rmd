@@ -1,0 +1,240 @@
+---
+title: "HW1"
+output: html_document
+date: "2023-04-17"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(qeML)
+data(pef)
+head(pef)
+```
+
+Get accuracy of predicting different variables:
+
+```{r}
+# Predict wage from all variables; MAE is > $25000
+qeLin(pef,'wageinc')$testAcc
+
+# Predict gender from alll variables; Incorrect 24% of the time
+qeLogit(pef,'sex')$testAcc
+
+# Predict occupation (6 jobs); Incorrect 64% of the time
+qeLogit(pef,'occ')$testAcc
+```
+
+## Function to Define:
+
+Format: `takeALookAround(data,yName,sName,maxFeatureSetSize)`
+
+`yName` and `sName` are the names of columns in the data frame `data`
+
+The tool will investigate the impact of using various subsets of the feature set on
+
+-   **(a)** prediction accuracy for Y of this feature set
+
+-   **(b)** prediction accuracy for Y of this feature set plus S (how much are we giving up by NOT using S?)
+
+-   **(c)** prediction accuracy for S of this feature set (the better the accuracy, the less fairness value there is in omitting S from prediction model)
+
+The return value will be a data frame with 4 columns.
+
+1.  A character string consisting of the names of the given feature set.
+2.  The prediction accuracy for (a)
+3.  The prediction accuracy for (b)
+4.  The prediction accuracy for (c)
+
+There will be one row in the d.f. for each feature set. All possible feature sets of size up to **maxFeatureSetSize** will be investigated.
+
+### Case Study with 2 Features:
+
+```{r}
+data <- pef
+yName <- "wageinc"
+sName <- "sex"
+maxFeatureSetSize <- 1000
+
+# Select columns excluding yName and sName
+featureSet <- colnames(data[,!names(data) %in% c(yName, sName)])
+results <- data.frame(matrix(nrow=0, ncol=4))
+colnames(results) <- c("features","Y","YS","Accuracy")
+
+i <- 1
+j <- 2
+
+feature1 <- featureSet[i] # age
+feature2 <- featureSet[j] # educ
+
+data_a <- data[,c(feature1, feature2, yName)]
+data_b <- data[,c(feature1, feature2, yName, sName)]
+data_c <- data[,c(feature1, feature2, sName)]
+
+if (is.numeric(data[1,yName])) {
+  acc_a <- qeLin(data_a,yName)$testAcc
+  acc_b <- qeLin(data_b,yName)$testAcc
+} else if (is.factor(data[1,yName])) {
+  acc_a <- qeLogit(data_b,yName)$testAcc
+  acc_b <- qeLogit(data_b,yName)$testAcc
+} else {
+  acc_a <- NA
+  acc_b <- NA
+}
+
+if (is.numeric(data[1,sName])) {
+  acc_c <- qeLin(data_c,sName)$testAcc
+} else if (is.factor(data[1,sName])) {
+  acc_c <- qeLogit(data_c,sName)$testAcc
+} else {
+  acc_c <- NA
+}
+
+result <-c(paste(feature1,feature2,sep=","), acc_a, acc_b, acc_c)
+results <- rbind.data.frame(results, result)
+```
+
+### Apply to All Combinations of Features:
+
+Verify Loop Structure
+
+```{r}
+count <- 0
+for (i in 1:length(featureSet)) {
+  for (j in i:length(featureSet)) {
+    if (i != j) {
+      print(paste(i,j,sep=" "))
+      count <- count+1
+    }
+  }
+}
+print(count)
+```
+
+Apply loop to all subsets of features (of size 2)
+
+```{r}
+data <- pef
+yName <- "wageinc"
+sName <- "sex"
+maxFeatureSetSize <- 1000
+
+# Select columns excluding yName and sName
+featureSet <- colnames(data[,!names(data) %in% c(yName, sName)])
+results <- data.frame(matrix(nrow=0, ncol=4))
+
+count <- 0
+for (i in 1:length(featureSet)) {
+  for (j in i:length(featureSet)) {
+    if (i != j) {
+      feature1 <- featureSet[i] # age
+      feature2 <- featureSet[j] # educ
+      
+      data_a <- data[,c(feature1, feature2, yName)]
+      data_b <- data[,c(feature1, feature2, yName, sName)]
+      data_c <- data[,c(feature1, feature2, sName)]
+      
+      if (is.numeric(data[1,yName])) {
+        acc_a <- qeLin(data_a,yName)$testAcc
+        acc_b <- qeLin(data_b,yName)$testAcc
+      } else if (is.factor(data[1,yName])) {
+        acc_a <- qeLogit(data_b,yName)$testAcc
+        acc_b <- qeLogit(data_b,yName)$testAcc
+      } else {
+        acc_a <- NA
+        acc_b <- NA
+      }
+      
+      if (is.numeric(data[1,sName])) {
+        acc_c <- qeLin(data_c,sName)$testAcc
+      } else if (is.factor(data[1,sName])) {
+        acc_c <- qeLogit(data_c,sName)$testAcc
+      } else {
+        acc_c <- NA
+      }
+      
+      result <-c(paste(feature1,feature2,sep=","), acc_a, acc_b, acc_c)
+      results <- rbind.data.frame(results, result)
+      count <- count+1
+    }
+  }
+}
+print(count)
+colnames(results) <- c("features","Y_acc","YS_acc","S_acc")
+View(results)
+```
+
+## Generalize Function for Any DF:
+
+```{r}
+takeALookAround <- function(data, yName, sName, maxFeatureSetSize) {
+  
+  # Select columns excluding yName and sName
+  featureSet <- colnames(data[,!names(data) %in% c(yName, sName)])
+  results <- data.frame(matrix(nrow=0, ncol=4))
+  
+  count <- 0
+  for (i in 1:length(featureSet)) {
+    for (j in i:length(featureSet)) {
+      if (i != j) {
+        feature1 <- featureSet[i] # age
+        feature2 <- featureSet[j] # educ
+        
+        data_a <- data[,c(feature1, feature2, yName)]
+        data_b <- data[,c(feature1, feature2, yName, sName)]
+        data_c <- data[,c(feature1, feature2, sName)]
+        
+        if (is.numeric(data[1,yName])) {
+          acc_a <- qeLin(data_a,yName)$testAcc
+          acc_b <- qeLin(data_b,yName)$testAcc
+        } else if (is.factor(data[1,yName])) {
+          acc_a <- qeLogit(data_b,yName)$testAcc
+          acc_b <- qeLogit(data_b,yName)$testAcc
+        } else {
+          acc_a <- NA
+          acc_b <- NA
+        }
+        
+        if (is.numeric(data[1,sName])) {
+          acc_c <- qeLin(data_c,sName)$testAcc
+        } else if (is.factor(data[1,sName])) {
+          acc_c <- qeLogit(data_c,sName)$testAcc
+        } else {
+          acc_c <- NA
+        }
+        
+        result <-c(paste(feature1,feature2,sep=","), acc_a, acc_b, acc_c)
+        results <- rbind.data.frame(results, result)
+        count <- count+1
+        if (count == maxFeatureSetSize) break
+      }
+    }
+    if (count == maxFeatureSetSize) break
+  }
+  print(count)
+  colnames(results) <- c("features","Y_acc","YS_acc","S_acc")
+  return(results)
+}
+```
+
+## Test Function on Example
+
+```{r}
+#data <- pef
+#yName <- "wageinc"
+#sName <- "sex"
+#maxFeatureSetSize <- 1000
+
+wageinc_sex <- takeALookAround(data=pef, 
+                               yName="wageinc", 
+                               sName="sex", 
+                               maxFeatureSetSize=100)
+View(wageinc_sex)
+wageinc_educ <- takeALookAround(data=pef, 
+                               yName="wageinc", 
+                               sName="educ", 
+                               maxFeatureSetSize=100)
+View(wageinc_educ)
+```

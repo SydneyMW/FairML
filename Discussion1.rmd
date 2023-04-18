@@ -1,0 +1,79 @@
+---
+title: "Discussion1"
+output: html_document
+date: "2023-04-06"
+editor_options: 
+  markdown: 
+    wrap: 72
+---
+
+# Discussion 1
+
+#### April 7, 2023
+
+TA email: [nylli\@ucdavis.edu](mailto:nylli@ucdavis.edu){.email}
+
+## Overview
+
+1.  OMSI system testing
+2.  New feature introduction: chat
+3.  R for basic linear algebra
+4.  'Compas' dataset
+5.  'German credit' dataset
+
+## 1. OMSI
+
+### Setup:
+
+-   Download OMSI
+-   Connect to library VPN
+-   Go to OMSI dir, find "OmsiGui.py"
+-   Run "OmsiGui.py" on terminal with cmd line script:
+
+### Run OMSI:
+
+-   **Command format:** python3 OmsiGui.py (localhost) (port#) (your ucd
+    email) (quiz name)
+
+-   **Example:** python3 OmsiGui.py pc11.cs.ucdavis.edu 4000
+    [nylli\@ucdavis.edu](mailto:nylli@ucdavis.edu){.email} quiz0_sq23
+
+-   **On my machine:** cd "C:/Program Files/omsi-master" python
+    OmsiGui.py pc11.cs.ucdavis.edu 4000
+    [sydwoods\@ucdavis.edu](mailto:sydwoods@ucdavis.edu){.email}
+    quiz0_sq23
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## 2. Linear Algebra
+
+```{r}
+# Matrix
+A <- matrix(c(2,2,3,4), nrow=2, ncol=2)
+
+# Inverse 
+inv(A)
+
+# Eigenvalues and Eigenvectors
+eigen(A)
+eig$values
+eig$vectors
+
+# Row bind
+rbind(A,B)
+
+```
+
+## 3. COMPAS Data Set
+
+```{r}
+
+```
+
+## 4. German Credit Data Set
+
+```{r}
+
+```

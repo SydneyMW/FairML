@@ -1,0 +1,88 @@
+---
+title: "Quiz0"
+output: html_document
+date: "2023-04-10"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Question 1:
+
+Consider the mtcars dataset, built-in to R. Write code that finds and prints the hp value in the third row of the dataset.
+
+```{r}
+# Select 3rd value of hp column and print
+print(mtcars$hp[3])
+```
+
+## Question 2:
+
+Again with the mtcars dataset, write code that finds and prints the mean mpg among cars having 6 or 8 cyclinders.
+
+```{r}
+# Create subset of mtcars with 6 or 8 cylinders
+subset <- mtcars[which(mtcars$cyl == 6 | mtcars$cyl == 8),]
+# Print mean mpg of this subset
+print(mean(subset$mpg))
+```
+
+## Question 3:
+
+Again with the mtcars dataset, write code that adds a new column, the horsepower/weight ratio, and prints the entire new dataset, now 12 columns rather than 11.
+
+```{r}
+# Create ratio column by dividing hp/wt
+mtcars$ratio <- mtcars$hp/mtcars$wt
+# Print full dataset
+print(mtcars)
+```
+
+## Question 4:
+
+Write code that prints: the proportion of foreign workers who have good credit; the proportion of workers with good credit who are foreign; the proportion of foreign workers; and the proportion of workers who have good credit. (Print a 4-element vector.)
+
+```{r}
+# Load fairml for german.credit dataset
+library(fairml)
+
+# Find credit of all workers, foreign workers, non-foreign workers
+credit_all <- german.credit$Credit_risk # n = 1000
+credit_foreign <- german.credit$Credit_risk[which(german.credit$Foreign_worker == "yes")] # n = 963
+credit_nonforeign <- german.credit$Credit_risk[which(german.credit$Foreign_worker == "no")] # n = 37
+
+# P(foreign workers who have good credit) = # foreign with good credit / # foreign
+p_foreign_good <- length(credit_foreign[which(credit_foreign == "GOOD")]) / length(credit_foreign)
+
+# P(workers with good credit who are foreign) = # foreign workers with good credit / # workers with good credit
+p_good_foreign <- length(credit_foreign[which(credit_foreign == "GOOD")]) / length(credit_all[which(credit_all == "GOOD")])
+
+# P(foreign workers) = # foreign workers / # workers
+p_foreign <- length(credit_foreign) / length(credit_all)
+
+# P(workers who have good credit) = # good credit workers / # workers
+p_good <- length(credit_all[which(credit_all == "GOOD")]) / length(credit_all)
+
+# Combine answers into vector and print
+answers <- c(p_foreign_good, p_good_foreign, p_foreign, p_good)
+print(answers)
+```
+
+```{r}
+german.credit[,c("Credit_risk","Foreign_worker")]
+```
+
+```{r}
+german.credit[which(german.credit$Foreign_worker == "yes"),c("Credit_risk","Foreign_worker")]
+```
+
+
+```{r}
+german.credit[c("Credit_risk","Foreign_worker")]
+```
+
+
+```{r}
+german.credit[which(german.credit$Foreign_worker == "yes"),]
+```

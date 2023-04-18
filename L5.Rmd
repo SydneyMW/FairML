@@ -1,0 +1,31 @@
+---
+title: "L5"
+output: html_document
+date: "2023-04-18"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Regression and Classification
+
+**Regression Problem:** predicting continuous variables
+
+-   Linear Regression is a special sub-case
+
+**Classification Problem:** predicting categorical variables
+
+**Regression Function:** unknown function we are estimating
+
+-   Example: height (x) vs. mean weight (y) line
+
+-   Example: height (x1) and age (x2) vs. mean weight (y) surface
+
+-   Each ML method has its own tuning parameters, but all center around the regression function m(t)
+
+**Proportions:** \# 1s / \# 0s = P(1)
+
+-   P(1) \> 0.5 $\rightarrow$ predict yes (i.e. will pass exam)
+
+-   P(1) \< 0.5 $\rightarrow$ predict no (i.e. will not pass exam)

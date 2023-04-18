@@ -1,0 +1,152 @@
+---
+title: "L3"
+output: html_document
+date: "2023-04-11"
+---
+
+### April 6, 2023
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Simpson's Paradox
+
+Two vars have positive relation:
+
+-   (+) rel(x, y)
+
+But the same vars have a negative relation when conditioned on 3rd var:
+
+-   (-) rel(x, y \| z)
+
+### Load UCB Data
+
+```{r}
+data("UCBAdmissions")
+dim(UCBAdmissions)
+dimnames(UCBAdmissions)
+```
+
+### Determine object structure:
+
+**Structure:** This data is a 3D table with various levels per attribute
+
+```{r}
+str(UCBAdmissions)
+```
+
+**Margin table:** temporarily ignoring department attribute, find each variable's "marginal counts" irrespective of department
+
+```{r}
+UCB.GA <- margin.table(UCBAdmissions, c(1,2))
+UCB.GA
+```
+
+```{r}
+univ <- apply(UCBAdmissions, c(1,2), sum)
+univ
+```
+
+Note: on the surface women appear to be proportionally much more frequently rejected than men
+
+```{r}
+prop.table(univ, 2)
+```
+
+Tool to develop: input data set, output graphically whether paradox applies
+
+Consider the number of unique values of x or y; if 2 then variable is dichotomous. For dichotomous variables, perform alternative (Kendall's) correlation measure; for non-dichotomous variables, use classical correlation.
+
+Graphical output:
+
+-   Built-in base R graphics: plot(u,v,col=w) \# col is hue, barplot
+
+-   Ggplot2 (ECS 132 appendix resource)
+
+-   Lattice
+
+Extra: find a data set & variables where paradox applies This data set is discrete, but can be applied to continuous data
+
+```{r}
+library(vcd)
+```
+
+## Fourfold Chart
+
+Invented by Edward Tufte
+
+Shape:
+
+-   Top row: admitted (L) and rejected (R) men
+
+-   Bottom row: admitted (L) and rejected (R) women
+
+Features:
+
+-   In any 2 adjacent quadrants, the ratio of the areas shown is the oz ratio (Opposite of pi chart, constant angle with varying radius, whereas pi chart is varying angle with constant radius)
+
+-   95% confidence interval around edge
+
+    <div>
+
+    -   $S.E. (\overline x ) = S / \sqrt(n)$
+
+    -   $\overline x +/- 1.96*(S.E.(\overline x))$
+
+    </div>
+
+### Compare total acceptance
+
+```{r}
+UCB <- aperm(UCBAdmissions, c(2,1,3))
+fourfold(margin.table(UCB, c(1,2)))
+```
+
+### Compare chart by department
+
+Aside from top-left chart, departments have nearly identical quadrants (similar M/F admission per dept)
+
+Top-left chart: admissions favored women (admitted women at higher rates than men)
+
+```{r}
+fourfold(UCBAdmissions, mfrow=c(2,3))
+```
+
+### Compare admission rates by department
+
+```{r}
+ftable(round(prop.table(UCBAdmissions, c(2,3)),2),
+       row.vars="Dept", col.vars=c("Gender","Admit"))
+```
+
+Key terms to search:
+
+-   Contingency tables
+
+-   Log-linear model
+
+-   X - explanatory variable(s), predictor(s), feature(s)
+
+-   Y - response variable, outcome variable, target
+
+Example:
+
+-   X: weeks worked
+
+-   Y: wage income
+
+-   Z: age
+
+-   Vertical axis will be correlations (find for z=1, z=2, ...)
+
+-   Graph correlations: find correlations for each z, then graph
+
+-   Bar heights are counts of correlations
+
+-   Number of bins for z (age)?
+
+```{r}
+UCB_G <- structable(Gender - Dept + Admit, data=UCBAdmissions)
+cotabplot(UCB_G)
+```

@@ -1,0 +1,97 @@
+---
+title: "L4"
+output: html_document
+date: "2023-04-13"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(qeML)
+data(mlb)
+head(mlb)
+```
+
+## Notation
+
+**Y**: what we are predicting
+
+**X**: what we are using to make predictions
+
+**Indicator/Dichotomous Variables:** (In R) 2-level factors typically 1/0 Coded
+
+-   X features can be indicators (dummy variables)
+
+-   Y can be a single indicator or a set of indicator variables
+
+**Arguments:**
+
+-   Formal arg: \<y name\>
+
+<!-- -->
+
+-   Actual arg: 'Weight'
+
+-   Optional args: have default values or NA
+
+### Example: KNN, Random Forest Train
+
+-   Call form: `model fit <- qe<model name>(<data name>,<Y name>)`
+
+-   Call:
+
+```{r}
+mlb1 <- mlb[,4:6]  # columns for height, weight and age
+knnout <- qeKNN(mlb1,'Weight')  # fit k-Nearest Neighbor model
+rfout <- qeRF(mlb1,'Weight')  # fit random forests model
+```
+
+### Example: Random Forest Predict
+
+-   Call form: `predict(<model fit>, <new X value>)`
+
+-   Call:
+
+```{r}
+predict(rfout,c(70,28))
+```
+
+### KNN Error (MAE)
+
+```{r}
+knnout$testAcc
+```
+
+### Random Forest Error (MAE)
+
+```{r}
+rfout$testAcc
+```
+
+**Default args in R:** Ideal for versatile user base
+
+**Hyper parameters:** i.e. tuning parameters
+
+-   Ex. number of nearest neighbors (e.g. k = 5 will use closest 5 instances to predict new instance)
+
+### Regression and Classification
+
+**Regression Settings:** y is continuous or ordinal
+
+**Classification Settings:** y is categorical
+
+-   Y is converted to a set of indicator variables
+
+-   $E(Y | X = t)$ reduces to $P(Y = 1 | X = t)$
+
+-   Find probabilities for each category, then guess the one with the highest probability.
+
+**The Regression Function:** $m(t) = E(Y | X = t)$
+
+-   $m(t)$: the mean value of $Y$ in the subpopulation defined by $X = t$
+
+-   Ex. $m(71,23)$ would be the mean weight among all players of height 71 inches and 23 years old
+
+-   Both regression and classification tasks make use of the regression function
