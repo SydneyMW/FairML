@@ -3,6 +3,9 @@ title: "Quiz0"
 output: html_document
 date: "2023-04-10"
 ---
+```{r}
+.libPaths(c("C:/Users/Sydney/Documents/R/win-library/4.1", "C:/Program Files/R/R-4.1.3/library"))
+```
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
@@ -36,7 +39,7 @@ Again with the mtcars dataset, write code that adds a new column, the horsepower
 # Create ratio column by dividing hp/wt
 mtcars$ratio <- mtcars$hp/mtcars$wt
 # Print full dataset
-print(mtcars)
+print(head(mtcars))
 ```
 
 ## Question 4:
@@ -69,20 +72,22 @@ answers <- c(p_foreign_good, p_good_foreign, p_foreign, p_good)
 print(answers)
 ```
 
+## Subset Data Frames
+
 ```{r}
-german.credit[,c("Credit_risk","Foreign_worker")]
+head(german.credit[,c("Credit_risk","Foreign_worker")])
 ```
 
 ```{r}
-german.credit[which(german.credit$Foreign_worker == "yes"),c("Credit_risk","Foreign_worker")]
-```
-
-
-```{r}
-german.credit[c("Credit_risk","Foreign_worker")]
+head(german.credit[which(german.credit$Foreign_worker == "yes"),c("Credit_risk","Foreign_worker")])
 ```
 
 
 ```{r}
-german.credit[which(german.credit$Foreign_worker == "yes"),]
+head(german.credit[c("Credit_risk","Foreign_worker")])
+```
+
+
+```{r}
+head(german.credit[which(german.credit$Foreign_worker == "yes"),])
 ```

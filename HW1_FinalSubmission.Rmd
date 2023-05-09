@@ -11,7 +11,7 @@ knitr::opts_chunk$set(echo = TRUE)
 # Problem 1
 
 ```{r}
-library(qeML)
+library(qeML, quietly=T)
 data(pef)
 head(pef)
 ```
@@ -102,51 +102,64 @@ results <- rbind.data.frame(results, result)
 
 ```{r}
 takeALookAround <- function(data, yName, sName, maxFeatureSetSize) {
+  library(qeML)
   
   # Select columns excluding yName and sName
   featureSet <- colnames(data[,!names(data) %in% c(yName, sName)])
   results <- data.frame(matrix(nrow=0, ncol=4))
   
+  # counter for feature set comparisons
   count <- 0
+  
+  # iterate through unique combinations of features
   for (i in 1:length(featureSet)) {
     for (j in i:length(featureSet)) {
       if (i != j) {
-        feature1 <- featureSet[i] # age
-        feature2 <- featureSet[j] # educ
+        feature1 <- featureSet[i] # i.e. age
+        feature2 <- featureSet[j] # i.e. educ
         
+        # a: predicting y from feature set
         data_a <- data[,c(feature1, feature2, yName)]
+        # b: predicting y from feature set plus S
         data_b <- data[,c(feature1, feature2, yName, sName)]
+        # c: predicting S from feature set
         data_c <- data[,c(feature1, feature2, sName)]
         
+        # use qeLin on numeric data to predict y
+        # use qeLogit on factor data to predict y
         if (is.numeric(data[1,yName])) {
-          acc_a <- qeLin(data_a,yName)$testAcc
-          acc_b <- qeLin(data_b,yName)$testAcc
+          acc_a <- qeLin(data_a,yName)$testAcc # without S
+          acc_b <- qeLin(data_b,yName)$testAcc # with S
         } else if (is.factor(data[1,yName])) {
-          acc_a <- qeLogit(data_b,yName)$testAcc
-          acc_b <- qeLogit(data_b,yName)$testAcc
+          acc_a <- qeLogit(data_a,yName)$testAcc # without S
+          acc_b <- qeLogit(data_b,yName)$testAcc # with S
         } else {
-          acc_a <- NA
-          acc_b <- NA
+          acc_a <- NA # invalid data
+          acc_b <- NA # invalid data
         }
-        
+        # use qeLin on numeric data to predict S
+        # use qeLogit on factor data to predict S
         if (is.numeric(data[1,sName])) {
-          acc_c <- qeLin(data_c,sName)$testAcc
+          acc_c <- qeLin(data_c,sName)$testAcc # predict S
         } else if (is.factor(data[1,sName])) {
-          acc_c <- qeLogit(data_c,sName)$testAcc
+          acc_c <- qeLogit(data_c,sName)$testAcc # predict S
         } else {
           acc_c <- NA
         }
-        
+        # names of features, accuracy a, b, and c
         result <-c(paste(feature1,feature2,sep=","), acc_a, acc_b, acc_c)
         results <- rbind.data.frame(results, result)
         count <- count+1
+        # break if limit met
         if (count == maxFeatureSetSize) break
       }
     }
+    # break if limit met
     if (count == maxFeatureSetSize) break
   }
   print(count)
   colnames(results) <- c("features","Y_acc","YS_acc","S_acc")
+  # df with names and accuracies
   return(results)
 }
 ```
@@ -154,21 +167,19 @@ takeALookAround <- function(data, yName, sName, maxFeatureSetSize) {
 ## Test Function on Example
 
 ```{r}
-#data <- pef
-#yName <- "wageinc"
-#sName <- "sex"
-#maxFeatureSetSize <- 1000
-
 wageinc_sex <- takeALookAround(data=pef, 
                                yName="wageinc", 
                                sName="sex", 
                                maxFeatureSetSize=100)
-View(wageinc_sex)
+print(wageinc_sex)
+```
+
+```{r}
 wageinc_educ <- takeALookAround(data=pef, 
                                yName="wageinc", 
                                sName="educ", 
                                maxFeatureSetSize=100)
-View(wageinc_educ)
+print(wageinc_educ)
 ```
 
 # Problem 2
@@ -215,102 +226,120 @@ cor(pef[,"age"],pef[,"wageinc"])
 ## Implementation
 
 ```{r}
-numericSimpson <- function(data,xName,yName,zName,numZvals=NULL) {
-  # Ensure x/y columns are numeric
-  data[,xName] <- as.numeric(data[,xName])
-  data[,yName] <- as.numeric(data[,yName])
-  # Check if z is categorical
-  isFactor <- is.factor(data[,zName])
+numericSimpsonfunction <- function(data,xName,yName,zName,numZvals=NULL){
+  #sort by Z value
+  df_ordered <- data[order(data[,zName]),]
+  size <- length(df_ordered[,xName])
   
-  if (is.null(numZvals)) {
-    numZvals <- 4
-  }
-  
-  # If z is categorical, partition by categories
-  # If z is numeric, partition by numZvals
-  if (isFactor) {
-    partition <- split(data,data[,zName])
+  if (is.numeric(data[, zName])){
+    interval_val <- ceiling(df_ordered[size, zName]/numZvals)
+    i_val <- interval_val
   } else {
-    zMin <- min(data[,zName])
-    zMax <- max(data[,zName])+0.0001
-    rng <- (zMax - zMin) / numZvals
-    
-    data$zCategory <- data[,zName] %/% rng
-    
-    # Add range for plot
-    for (i in 1:length(data$zCategory)) {
-      zCategory <- data$zCategory[i]
-      binMin <- zMin + (zCategory*rng)
-      binMax <- zMin + ((zCategory+1)*rng)
-      range <- paste("[",paste(binMin, binMax, sep=","), ")", sep="")
-      data$zRange[i] <- range
+    #Separate Z into levels if it is categorical
+    interval_val <- levels(data[, zName])
+    numZvals = length(interval_val)
+    #Initialize i_val to avoid processing error, however this assignment will not be 
+    #i_val contains the next item to search for so that the values in interval_val remain unchanged
+    i_val <- interval_val[1]
+  }
+  #p_points is an array containing the index of the last occurrence of an element in the data
+  p_points <- c(1)
+  #Get a vector showing the indices of intervals 
+  for (i in 1:numZvals){
+    val <- match(i_val, df_ordered[,zName])
+    #If no match exists, find the closest element
+    if (is.na(val)){
+      val <- which.min(abs(df_ordered[,zName] - i_val))
     }
-    # Partition by category
-    partition <- split(data,data$zCategory)
-  }
-  
-  # Create DF to store corr values
-  corrDF <- data.frame(matrix(nrow=0, ncol=2))
-  colnames(corrDF) <- c("category","corr")
-  
-  # If both x and y are continuous, use cor()
-  # If at least one is dichotomous, use kendall's tau
-  if ((length(unique(data[,xName])) > 2) || (length(unique(data[,yName])) > 2)) {
-    usePearson <- TRUE
-  } else {
-    usePearson <- FALSE
-  }
-  
-  # Collect correlation values
-  if (usePearson) { # find pearson correlation
-    for (i in 1:length(partition)) {
-      df <- partition[[i]]
-      if (isFactor) {
-        category <- df[,zName][1]
-      } else {
-        category <- df$zRange[1]
+    if (is.numeric(data[,zName])){
+      #Include the upper bound and exit the loops at the last iteration
+      if (i == numZvals){
+        p_points <- append(p_points, size)
+        break
       }
-      corr <- cor(df[,xName], df[,yName])
-      newDF <- data.frame(matrix(nrow=1,ncol=2))
-      colnames(newDF) <- c("category","corr")
-      newDF$category <- category
-      newDF$corr <- corr
-      corrDF <- rbind.data.frame(corrDF,newDF)
-    }
-    unconditionalCorr <- cor(data[,xName],data[,yName])
-  } else { # find kendall's tau correlation
-    for (i in 1:length(partition)) {
-      df <- partition[[i]]
-      if (isFactor) {
-        category <- df[,zName][1]
-      } else {
-        category <- df$zRange[1]
+      #otherwise continue through
+      p_points <- append(p_points, val)
+      i_val <- i_val + interval_val
+    } else{
+      #First element in p_points should be 1, not the the last occurrence of the first category
+      #Therefore, set i_val to the next element to find and continue the loop
+      if (i == 1){
+        i_val <- interval_val[i+1]
+        next
+        }
+      p_points <- append(p_points, val) 
+      #increment i_val
+      i_val <- interval_val[i+1]
+      #Include the upperbound
+      if (i == numZvals){
+        p_points <- append(p_points, size)
       }
-      corr <- Kendall(df[,xName], df[,yName])$tau[1]
-      newDF <- data.frame(matrix(nrow=1,ncol=2))
-      colnames(newDF) <- c("category","corr")
-      newDF$category <- category
-      newDF$corr <- corr
-      corrDF <- rbind.data.frame(corrDF,newDF)
     }
-    unconditionalCorr <- Kendall(data[,xName],data[,yName])$tau[1]
+  }
+
+  #CorrList will contain an array of all the calculated correlations
+  CorrList <- c()
+  for (i in 1:numZvals){
+    #p_points[i] is lower bound of each partition, p_points[i+1] is the upper bound
+    xVar <- as.numeric(df_ordered[p_points[i]:p_points[i+1], xName])
+    yVar <- as.numeric(df_ordered[p_points[i]:p_points[i+1], yName])
+    
+    if (is.factor(data[1,xName]) || is.factor(data[1,yName])){
+      Corr <- cor(xVar, yVar, method = 'kendall', use = 'complete.obs')
+    }
+    else if (is.numeric(data[1,xName]) && is.numeric(data[1, yName])){
+      Corr <- cor(xVar, yVar, use = 'complete.obs')
+    }
+    CorrList <- append(CorrList, Corr)
   }
   
-  corrDF$corr <- as.numeric(corrDF$corr)
+  #=====================Graphing==========================
+  header <- paste("X = ", xName, ", Y = ", yName, ", Z = ", zName, sep = "")
+  lb_list <- c()
+  for (i in 1:numZvals){
+    #if its numeric none of the bounds information
+    if (is.numeric(data[,zName])){
+      if (i == 1){
+        #first and second give the numeric values of the Z-Bounds
+        first <- df_ordered[p_points[i]+1, zName]
+        second <- df_ordered[p_points[i+1], zName]
+      }else{
+        first <- df_ordered[p_points[i], zName]
+        second <- df_ordered[p_points[i+1], zName]
+      }
+      label <- paste("(", first, ", ", second, "]", sep = "")
+    }else{
+      if (i == 1){
+        label <- df_ordered[p_points[i]+1, zName]
+      }else{
+        label <- df_ordered[p_points[i], zName]
+      }
+    }
+    lb_list <- append(lb_list, label)
+  }
+  uncCor <- cor(as.numeric(data[,xName]), as.numeric(data[,yName]))
+  sub <- paste("Unconditional Correlation = ", uncCor, sep = "")
+  barplot(CorrList, 
+          col = palette(),
+          names.arg = lb_list,
+          main = header,
+          ylab = "cors",
+          xlab = "zLvls",
+          ylim = c(-1,1),
+          sub = sub,
+          col.sub = "blue"
+        )
   
-  # Plot correlation values in barplot
-  names <- unique(corrDF$category)
-  title <- paste("X = ",xName,", Y = ",yName,", Z = ",zName,sep="")
-  xlab <- "Categories of Z"
-  ylab <- paste("Z-Stratified Correlation between X and Y")
-  sub <- paste("(Unconditional Correlation = ",unconditionalCorr,")", sep="")
-  barplot(corrDF$corr, xlab=xlab, ylab=ylab, ylim=c(-1,1), main=title, sub=sub, col.sub="blue", names.arg=names, col=palette())
-  abline(h=unconditionalCorr,col="blue")
-  abline(h=0,col="black")
+  abline(h=0, col = "black")
+  abline(h = uncCor, col = "blue")
 }
 ```
 
 ## Test Samples
+
+```{r}
+numericSimpsonfunction(pef, 'sex', 'wageinc','wkswrkd',4)
+```
 
 ```{r}
 data <- pef
@@ -318,7 +347,7 @@ xName <- "age" # continuous numeric
 yName <- "wkswrkd" # continuous numeric
 zName <- "wageinc" # numeric
 numZvals <- 5
-numericSimpson(data,xName,yName,zName,numZvals)
+numericSimpsonfunction(data,xName,yName,zName,numZvals)
 ```
 
 ```{r}
@@ -326,7 +355,7 @@ data <- pef
 xName <- "age" # continuous numeric
 yName <- "sex" # dichotomous factor
 zName <- "wageinc" # numeric
-numericSimpson(data,xName,yName,zName,2)
+numericSimpsonfunction(data,xName,yName,zName,2)
 ```
 
 ```{r}
@@ -334,22 +363,30 @@ data <- pef
 xName <- "age" # continuous numeric
 yName <- "wageinc" # continuous numeric
 zName <- "sex" # categorical
-numericSimpson(data,xName,yName,zName,numZvals=NULL)
+numericSimpsonfunction(data,xName,yName,zName,numZvals=NULL)
 ```
 
 ```{r}
-numericSimpson(pef,'age','wageinc','wkswrkd',4)
+numericSimpsonfunction(pef,'age','wageinc','wkswrkd',4)
 ```
 
 ```{r}
-numericSimpson(pef,'sex','wageinc','wkswrkd',5)
+numericSimpsonfunction(pef,'sex','wageinc','wkswrkd',5)
 ```
 
 ```{r}
-numericSimpson(pef,'age','wageinc','occ',4)
+numericSimpsonfunction(pef,'age','wageinc','occ',4)
 ```
 
 # Extra Credit B
+
+It would be nice to condition on two factors, e.g. gender and occupation. There Z would be an R factor with 2 X 6 = 12 levels, representing a categorical variable of 12 categories.
+
+Write a function with call form
+
+    superFactor(f1,f2)
+
+which returns a new factor that is a combination of factors **f1** and **f2** as described above.
 
 ```{r}
 superFactor <- function(f1,f2) {
@@ -367,6 +404,8 @@ unique(superFactor(pef$sex, pef$educ))
 ```
 
 # Extra Credit A
+
+Find a real dataset, in which at least one of X and Y is a continuous variable, in which SP hold. Write your jode as a function call **spExample()** (no arguments). It will fetch the dataset, perform any needed preprocessing, and then call **numericSimpson()**.
 
 ```{r}
 #install.packages(c("devtools"))
@@ -395,5 +434,5 @@ data <- dds
 xName <- "Expenditures" # continuous numeric
 yName <- "Ethnicity" # continuous numeric
 zName <- "Age.Cohort" # categorical
-numericSimpson(data,xName,yName,zName,numZvals=NULL)
+numericSimpsonfunction(data,xName,yName,zName,numZvals=NULL)
 ```

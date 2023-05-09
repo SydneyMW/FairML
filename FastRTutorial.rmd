@@ -1,6 +1,8 @@
 ---
 title: "FastRTutorial"
-output: html_document
+output:
+  html_document: default
+  pdf_document: default
 date: "2023-04-06"
 ---
 
@@ -206,7 +208,7 @@ z
 
 ```{r}
 y <- tg[ , c(1,3)]
-y
+head(y)
 ```
 
 ```{r}
@@ -565,8 +567,7 @@ plot(dw,col='red')
 points(dm,cex=0.2)
 ```
 
-Call plot and then points: calling **plot** twice would destroy the first plot; we merely want to *add points* to the existing graph.
-Plot women's data first: the women's curve is taller, so if we plotted the men first, part of the women's curve would be cut off.
+Call plot and then points: calling **plot** twice would destroy the first plot; we merely want to *add points* to the existing graph. Plot women's data first: the women's curve is taller, so if we plotted the men first, part of the women's curve would be cut off.
 
 # Lesson 16: Writing Your Own Functions
 
@@ -668,8 +669,7 @@ for (i in 2:6) {
 
 # Break Construct
 
-Say we are adding cubes of numbers 1,2,3,\..., and for some reason want to determine which sum is the first to exceed **s**.
-If our accumulated total meets our goal, we leave the loop early.
+Say we are adding cubes of numbers 1,2,3,\..., and for some reason want to determine which sum is the first to exceed **s**. If our accumulated total meets our goal, we leave the loop early.
 
 ```{r}
 f <- function(n,s) {
@@ -702,7 +702,7 @@ zerosToNAs <- function(d,cols){
 Apply to pima to create a copy with NAs replacing all 0s:
 
 ```{r}
-zerosToNAs(pima,2:6)
+head(zerosToNAs(pima,2:6))
 ```
 
 # Lesson 19: Text Editing and IDEs
@@ -778,7 +778,7 @@ pe$educ <- ifelse(edu < 13,12,edu)
 plot(pe$age,pe$wageinc,col=edu, cex=0.2)
 ```
 
-### "If Else" Example: 
+### "If Else" Example:
 
 ```{r}
 if (x < 3) y <- -1 else y <- 1
@@ -972,7 +972,7 @@ m
 Do this any time package needs to be installed or updated
 
 ```{r}
-install.packages('ggplot2')
+#install.packages('ggplot2')
 ```
 
 ### Ggplot2 Load

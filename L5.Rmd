@@ -32,6 +32,65 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ## KNN
 
+**Error**
+
 -   For k = 10 with given holdout (i.e. 1000), run many tests with random holdout
 
 -   Average error to measure performance for k = 10
+
+**Distance Metrics**
+
+-   Height could be ft, m, in; mutates scale
+
+-   If using distance for height and age, where height is 55-75 and age is 20-30, we inadvertently place higher value on height than age
+
+-   **Standardization:** generate $(X -\overline{X}) / \sigma$ for each point - essential for convergence in neural nets
+
+-   **Scaler():** R function for standardization
+
+**Tuning Hyperparameter k**
+
+-   Too small: not enough data
+
+-   Too large: insensitive
+
+-   Default in qeKNN: k = 25
+
+-   **Bias/Variance Tradeoff:** when k is small, variance of weight among sets of k people will vary significantly. When k is large, bias is introduced.
+
+-   Can assign weights to variables as needed in qeKNN
+
+```{r}
+data(mlb)
+mlb1 <- mlb[,4:6]  # columns for height, weight and age
+head(mlb1)
+```
+
+Compare default k = 25, k = 10, and k = 3
+
+Generate 50 random holdout sets and find mean error for a given k:
+
+```{r}
+replicMeans(50,"qeKNN(mlb1,'Weight')$testAcc")
+#[1] 13.69573
+#attr(,"stderr")
+#[1] 0.1390298
+
+replicMeans(50,"qeKNN(mlb1,'Weight',k=10)$testAcc")
+#[1] 14.1965
+#attr(,"stderr")
+#[1] 0.1504877
+
+replicMeans(50,"qeKNN(mlb1,'Weight',k=3)$testAcc")
+#[1] 15.32858
+#attr(,"stderr")
+#[1] 0.1707612
+```
+
+## KNN Edge Bias
+
+> "One potential problem is bias at the edge of a neighborhood. Say we are predict weight from height, and a new case involving a very tall person. Most data points in the neighborhood of this particular height value will be for people who are shorter than the new case. Those neighbors are thus likely to be lighter than the new case, making our predicted value for that case biased downward."
+
+**qeKNN Solution:** set argument **smoothingFtn = loclin** to remove linear trend within the neighborhood and improve edge case prediction accuracy
+
+**Example:** when predicting the weight using height and age, if a person is particularly tall, the k-nearest neighbors will be mostly shorter. Prediction will be **biased downward**.

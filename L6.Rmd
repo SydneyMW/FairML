@@ -1,0 +1,51 @@
+---
+title: "L6"
+output: html_document
+date: "2023-04-20"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Random Forest
+
+**Benefits of many trees:**
+
+-   Many orderings of variable
+
+-   Smoothing effect on cutoffs; one instance that barely misses cutoff in one tree may be well within cutoff in another
+
+-   Number of trees is a hyperparameter (goldilocks level): too few is like small k in KNN; too many is computationally expensive
+
+**Choosing cutoffs:**
+
+-   Hyperparameters
+
+**Edge Bias:**
+
+-   Similar to KNN
+
+-   New case will experience bias down/up
+
+-   qeRFgrf removes linear trend to deal with edge bias
+
+**Boosting:**
+
+-   Iteratively build up a sequence of trees, each of which is an improved update of the last
+
+-   May start with nothing/root node/weak predictor
+
+-   Tabular data: row/col arranged (csv, df, etc)
+
+-   Grayscale image: matrix of values (32:32 px); not considered tabular; rather, sense data
+
+-   xgboost
+
+## Linear Model
+
+"All models are wrong -- but some are useful"
+
+**Assumption to Ignore:** Assume each sub-population possessing each combination of variables/features is normally distributed
+
+**Residual:** actual value - predicted value

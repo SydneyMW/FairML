@@ -1,0 +1,19 @@
+---
+title: "OMSI"
+output: html_document
+date: "2023-04-20"
+---
+
+```{r}
+# Package paths
+.libPaths(c("C:/Users/Sydney/Documents/R/win-library/4.1", "C:/Program Files/R/R-4.1.3/library"))
+
+# Load data with fairml
+library(fairml)
+data(compas)
+
+# Load data from desktop
+load("C:/Users/Sydney/Desktop/FairMLCourse-main/Data/fairml/compas.rda")
+load("C:/Users/Sydney/Desktop/FairMLCourse-main/Data/other/englishBrief.Rdata")
+```
+
