@@ -8,68 +8,25 @@ date: "2023-05-09"
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-### Breakdown
+# Problem 1
 
-```{r}
-library(qeML)
-data(pef)
-data <- pef
-Name <- 'wkswrkd'
-numCuts <- 4
-head(data)
-```
+SAT Variables
 
-```{r}
-if (!is.numeric(data[,Name])){
-  stop("data must be numeric, call form: cutN(data, categoryName, numCuts)")
-}
-df <- data[order(data[,Name]),,drop=FALSE]  # order by wkswrkd
-size <- length(df[,Name])        # numrows = 20090
-intervalSize <- ceiling(df[size, Name]/ numCuts) # size 13 for splitting min:max 0:52 wkswrkd into 4 categories
-iVal <- intervalSize
-head(df)
-```
+-   **SAT score (Proxy)** - use percentile and then cut to separate into nQuantl = 5 quantiles
 
-```{r}
-cutPoints <- c(1)
-for (i in 1:numCuts){           # 1:4 groups of wkswrkd
-  val <- match(iVal, df[,Name]) # find group cutoff (i.e. 13) index
-  if (is.na(val)){              # if no match, find closest neighbor index (min)
-    val <- which.min(abs(df[,Name] - iVal)) 
-  }
-  if (i == numCuts){            # for last group: add last row index to index list, exit
-    cutPoints <- append(cutPoints, size)
-    break
-  }
-  cutPoints <- append(cutPoints, val) # add last row index to index list
-  iVal <- iVal + intervalSize         # i.e. 13+13 -> 26+13 -> 39+13 -> 52
-}
-print(cutPoints)                # print indices of cutoffs
-print(numCuts)
-```
+-   **Family income (Cat)** - use cut to separate into nCut = 4 groups (unless categorical)
 
-```{r}
-df$newFactors <- ""
-for (i in 1:numCuts) {
-  first <- df[cutPoints[i], Name]      # min of range (i.e. 13 wkswrkd)
-  second <-df[cutPoints[i+1], Name]    # max of range (i.e. 26 wkswrkd)
-  label <- paste("(", first, ", ", second, "]", sep = "") # i.e. "(13, 26]"
-  indexMin <- cutPoints[i]             # index of min (i.e. 1643)
-  indexMax <- cutPoints[i+1]           # index of max (i.e. 2310)
-  df$newFactors[indexMin:indexMax] <- label
-}
-df$newFactors <- as.factor(df$newFactors)
-print(unique(df$newFactors))
-head(df)
-#return(df$newFactors)
-```
+-   **College acceptance (Y)** - predicting with modification of SAT score based on family income group
 
-```{r}
-df <- df[order(as.numeric(row.names(df))), ]
-head(df)
-```
+PEF Variables
 
-### Function
+-   **Weeks worked (Proxy)** - use percentile and then cut to separate into nQuantl = 5 quantiles
+
+-   **Age (Cat)** - use cut to separate into nCut = 4 groups (unless categorical)
+
+-   **Wage income (Y)** - predicting with modification of wkswrkd based on age group
+
+## Cut Function
 
 ```{r}
 library(qeML)
@@ -113,5 +70,24 @@ Ncut <- function(data, Name, numCuts=2){
 }
 
 data$wkswrkdCategory <- Ncut(pef, 'wkswrkd', 4) # test!
+head(data)
+```
+
+## 1. Generate Percentiles for Proxy (wkswrkd, SAT score)
+
+```{r}
+data(pef)
+data <- pef         # data
+proxName <- 'wkswrkd'   # X value (i.e. SAT score)
+
+data$proxPercentile <- rank(data[,proxName])/nrow(data)*100
+head(data)
+```
+
+## 2. Cut and Label Data by Proxy Quantile
+
+```{r}
+nQuantls <- 2
+data$proxCategory <- Ncut(data,"proxPercentile", numCuts=nQuantls)
 head(data)
 ```

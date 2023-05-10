@@ -1,0 +1,123 @@
+---
+title: "L11"
+output: html_document
+date: "2023-05-09"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Statistical Tests
+
+**Next reading:** specifics of ProPublica analysis [The Case Against Significance Tests](https://github.com/matloff/qeML/blob/master/inst/mdFiles/No_P_Values.md)
+
+### Basic Significance Test:
+
+-   FDA: $H_{0}: \mu_{old} = \mu_{new}$
+
+-   Basic: $H_{0}: \mu = \mu_{0}$ where $\mu$ is the population mean of X and $\mu_{0}$ is the hypothesized value
+
+-   $Z = (\overline{X} - \mu)\ /\ (S/\sqrt{n})$ where $\overline{X}$ is the sample mean, $\mu$ is the population mean, $n$ is the number of students, and $S/sqrt{n}$ is the standard error
+
+-   $Z ~= N(0,1)$
+
+-   Under $H_0$ (if $H_0$ were true), the probability $P(|Z| > 1.96) = 0.05$ represents that a Z-value of 1.96 provides evidence that $H_0$ is not true with 95% confidence
+
+### Bias in Significance Testing
+
+As sample size increases:
+
+-   n increases, so denominator $S\sqrt{n}$ decreases towards 0
+
+-   $\overline{X}$ approaches $\mu$ so numerator will likely stay roughly constant
+
+-   Z as a whole approaches infinity for increasing sample sizes
+
+For a large sample, we'd end up rejecting the $H_0$ because it is too precise
+
+For small samples, we don't want to be too precise
+
+-   There will be a difference between new and old drug, we only want to know if it is a large difference
+
+-   Hypothesis is not the proper question to ask
+
+Potential Improvements:
+
+-   Better (but not used): $H_0: \mu_{new} > \mu_{old} + C$ for some ideal threshold C
+
+-   Confidence interval for $\mu$ gives us both:
+
+    -   Sets an interval to estimate the true mean
+
+    -   Width of interval can indicate low accuracy/reliability due to small sample
+
+Issue of the Opinion Poll:
+
+-   A significant difference in support between opponents could be a very small difference with high statistical significance
+
+-   A confidence interval is more informative for guaging support and reliability of estimation
+
+"The null hypothesis is always false"
+
+### Multiple Test Correction
+
+-   For 5 tests, reduce "significant" p to 0.01 so that overall significance is still 0.05
+
+-   For 5 confidence intervals, increase confidence to 99% so that overall confidence is still 95
+
+## COMPAS Algorithm [Analysis](https://www.propublica.org/article/how-we-analyzed-the-compas-recidivism-algorithm)
+
+> We looked at more than **10,000 criminal defendants** in Broward County, Florida, and compared their predicted recidivism rates with the rate that actually occurred over a two-year period. When most defendants are booked in jail, they respond to a COMPAS questionnaire. Their answers are fed into the COMPAS software to generate several scores including predictions of "Risk of Recidivism" and "Risk of Violent Recidivism."
+
+n = 10,000
+
+> We compared the recidivism risk categories predicted by the COMPAS tool to the actual recidivism rates of defendants in the two years after they were scored, and found that the score correctly predicted an offender's recidivism **61 percent** of the time, but was only correct in its predictions of violent recidivism **20 percent** of the time.
+>
+> In forecasting who would re-offend, the algorithm correctly predicted recidivism for black and white defendants at roughly the same rate (59 percent for white defendants, and 63 percent for black defendants) but made mistakes in very different ways. It misclassifies the white and black defendants differently when examined over a two-year follow-up period.
+
+Algorithm is over-predicting for black defendants and under-predicting for white defendants
+
+> Our analysis found that:
+>
+> -   Black defendants were often predicted to be at a higher risk of recidivism than they actually were. Our analysis found that black defendants who did not recidivate over a two-year period were nearly twice as likely to be misclassified as higher risk compared to their white counterparts (45 percent vs. 23 percent).
+>
+> -   White defendants were often predicted to be less risky than they were. Our analysis found that white defendants who re-offended within the next two years were mistakenly labeled low risk almost twice as often as black re-offenders (48 percent vs. 28 percent).
+>
+> -   The analysis also showed that even when controlling for prior crimes, future recidivism, age, and gender, black defendants were 45 percent more likely to be assigned higher risk scores than white defendants.
+
+Adjusting for covariates (as in UCB admissions Simpson's analysis, where adjusting for covariates removed apparent gender bias) does NOT remove racial bias here
+
+> -   Black defendants were also twice as likely as white defendants to be misclassified as being a higher risk of violent recidivism. And white violent recidivists were 63 percent more likely to have been misclassified as a low risk of violent recidivism, compared with black violent recidivists.
+>
+> -   The violent recidivism analysis also showed that even when controlling for prior crimes, future recidivism, age, and gender, black defendants were 77 percent more likely to be assigned higher risk scores than white defendants.
+
+Not adjusting for covariates:
+
+![](https://static.propublica.org/projects/algorithmic-bias/assets/img/generated/methodology-risk-of-recidivism-scores-by-race-900*363-482d1c.png)
+
+![](https://static.propublica.org/projects/algorithmic-bias/assets/img/generated/methodology-risk-of-violent-recidivism-scores-by-race-900*363-4146d6.png)
+
+**Logistic Model:** looking at what factors fed into risk assessment
+
+-   Age greater than 45 (-1.356\*\*\*) was highly utilized
+
+-   Age less than 25 (1.308\*\*\*) was highly utilized
+
+-   Black race (0.477\*\*\*) indicates racial bias
+
+    -   $H_0$ would be that black defendants are treated fairly
+
+    -   Positive 0.477 represents that, all else being equal, black defendants are liable to being labeled as more risky than white defendants
+
+-   (\*\*\*) represents p \< 0.01, meaning we would reject $H_0$ with 99% confidence
+
+-   $H_0$ means a given variable has no impact on score prediction
+
+-   With a sample size of 10,000, we are highly likely to reject anything
+
+COMPAS analysis did not scale data
+
+-   Mostly dummy 0/1 variables (automatically scaled)
+
+-   Continuous variables such as number of priors not scaled
