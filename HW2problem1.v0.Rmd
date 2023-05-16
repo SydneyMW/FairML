@@ -77,8 +77,8 @@ head(data)
 
 ```{r}
 data(pef)
-data <- pef         # data
-proxName <- 'wkswrkd'   # X value (i.e. SAT score)
+data <- pef             # data
+proxName <- 'wkswrkd'   # proxy (i.e. SAT score)
 
 data$proxPercentile <- rank(data[,proxName])/nrow(data)*100
 head(data)

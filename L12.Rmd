@@ -1,0 +1,25 @@
+---
+title: "L12"
+output: html_document
+date: "2023-05-11"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## ROC
+
+Receiver Operating Curve
+
+-   X-axis: True Negative Rate
+
+-   Y-axis: True Positive Rate
+
+-   AUC: Area Under the Curve (large values are ideal)
+
+Problem: All X-axis values are equally weighted
+
+Reading: [Technical Details of ProPublica Analysis](https://www.propublica.org/article/how-we-analyzed-the-compas-recidivism-algorithm)
+
+Next Reading: [Microanalysis of Sources of Bias in COMPAS Data](https://pbiecek.github.io/xai_stories/story-compas.html)

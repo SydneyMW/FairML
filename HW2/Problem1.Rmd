@@ -1,0 +1,253 @@
+---
+title: "HW1Problem1"
+output: html_document
+date: "2023-05-11"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(qeML)
+data(pef)
+library(fairml)
+data(law.school.admissions)
+```
+
+### Cut Function
+
+Inputs:
+
+-   **data**
+
+-   **Name** - variable to partition data by
+
+-   **numCuts** - number of partitions to make
+
+Outputs:
+
+-   **df\$newFactors** - column with categorical labels (i.e. (13, 26])
+
+```{r}
+# To be applied to percentiles, to cut neatly into 0-20, 20-40, 40-60, etc. bins
+Ncut <- function(data, Name, numCuts=2, max=NULL, min=NULL){
+  if (!is.numeric(data[,Name])){
+    stop("data must be numeric, call form: cutN(data, categoryName, numCuts)")
+  }
+  df <- data[order(data[,Name]),,drop=FALSE]  # order by wkswrkd, keep original row indices to sort later
+  size <- length(df[,Name])                   # numrows = 20090
+  
+  if (is.null(max)) {
+    intervalSize <- ceiling(df[size, Name]/ numCuts) # ival size 13 for splitting min:max 0:52 wkswrkd into 4 categories
+  } else {
+    intervalSize <- (max-min)/numCuts # ival size 25 for splitting percentiles into 4 groups
+  }
+  
+  iVal <- intervalSize
+  cutPoints <- c(1)
+  for (i in 1:numCuts){                       # 1:4 groups of income percentile
+    val <- match(iVal, df[,Name])             # find group cutoff (i.e. 20th) index
+    if (is.na(val)){                          # if no match, find closest neighbor index (min)
+      val <- which.min(abs(df[,Name] - iVal)) 
+    }
+    if (i == numCuts){                        # for last group: add last row index to index list, exit
+      cutPoints <- append(cutPoints, size)
+      break
+    }
+    cutPoints <- append(cutPoints, val)       # add last row index to index list
+    iVal <- iVal + intervalSize               # i.e. 0+25 -> 25+25 -> 50+25 -> 75+25 -> 100
+  }
+  print(cutPoints)                            # print indices of cutoffs
+  df$newFactors <- ""
+  for (i in 1:numCuts) {
+    if (is.null(max)) {
+      first <- df[cutPoints[i], Name]         # min of range (i.e. 13 wkswrkd)
+      second <-df[cutPoints[i+1], Name]       # max of range (i.e. 26 wkswrkd)
+    } else {
+      first <-  min+(intervalSize*(i-1))      # min of PERCENTILE range (i.e. 0)
+      second <- min+(intervalSize*(i))        # max of PERCENTILE range (i.e. 20)  
+    }
+    
+    label <- paste("(", first, ", ", second, "]", sep = "") # i.e. "(13, 26]"
+    indexMin <- cutPoints[i]                  # index of min (i.e. 1643)
+    indexMax <- cutPoints[i+1]                # index of max (i.e. 2310)
+    df$newFactors[indexMin:indexMax] <- label # add range label to new column
+  }
+  df$newFactors <- as.factor(df$newFactors)   # convert to factor
+  print(unique(df$newFactors))
+  df <- df[order(as.numeric(row.names(df))),] # sort using original order
+  return(df$newFactors)
+}
+```
+
+### Cut Function Example
+
+```{r}
+data <- pef
+Name <- 'wkswrkd'
+numCuts <- 4
+data$wkswrkdCategory <- Ncut(data=data, Name=Name, numCuts=numCuts)
+head(data[,c('wkswrkd','wkswrkdCategory')], 10)
+```
+
+# 1. Relative Proxy Function
+
+Inputs:
+
+-   **data** - a data frame or equivalent
+
+-   **proxyName** - e.g. SAT score in the above example (proxy for wealth)
+
+-   **catName** - e.g. family income in the above example; presumed to be a categorical variable, i.e. an R factor
+
+-   **nQuantls** - the number of percentiles we'll use
+
+-   **nCut** - applies to the case in which catName is originally a continuous variable; it will be tranformed to an R factor by converting it to this many intervals, as in the R cut() function
+
+Outputs:
+
+-   The return value will be an object of class 'relProx', an R list quantls with one component for each level in the catName column (after cut()-like operatin, if any). Said component will consist of the nQuantls of the proxyName column within the rows of data for that category.
+
+-   The return value will also need to record the intervals made by the cut()-like function, if any (see below). Do this by attaching an R 'attribute' to the return value.
+
+### RelProx Implementation
+
+```{r}
+relativeProxy <- function(data,proxyName,catName,nQuantls,nCut=NULL) {
+  if (is.null(nCut)) {
+    # Split 'income' by categorical levels
+    data$catCategory <- data[,catName]
+  } else {
+    # Split 'income' into groups by percentile if continuous (otherwise, leave as is)
+    data$catPercentile <- rank(data[,catName])/nrow(data)*100
+    data$catCategory <- Ncut(data,"catPercentile", numCuts=nCut)
+  }
+  
+  # Create S3 list of dataframes split by category levels
+  catLevels <- levels(data$catCategory)
+  quantls <- split(data,data$catCategory,drop = FALSE)
+  class(quantls) <- 'relProx'
+  
+  # In each category, find relative percentiles and quantiles for proxy variable
+  for (i in 1:length(quantls)) {
+    # Isolate dataframe for a particular level
+    subset <- quantls[[i]]
+    
+    # Calculate percentiles for each proxy value
+    subset$proxyPercentile <- rank(subset[,proxyName])/nrow(subset)*100
+    
+    # Split proxy into quantiles by percentile
+    subset$proxyCategory <- Ncut(subset,"proxyPercentile", numCuts=nQuantls, max=100, min=0)
+    
+    # Re-assign dataframe with new columns
+    quantls[[i]] <- subset
+  }
+  return(quantls)
+}
+```
+
+### RelProx Example: Continuous Category
+
+```{r}
+data <- pef              # data
+proxyName <- 'wkswrkd'   # proxy (i.e. wkswrkd, SAT score)
+catName <- 'age'         # category (i.e. age, income)
+nQuantls <- 5            # split 'wkswrkd' into two high/low groups
+nCut <- 4                # split 'age' into four groups
+
+quantls <- relativeProxy(data=data,proxyName=proxyName,catName=catName,nQuantls=nQuantls,nCut=nCut)
+head(quantls[[1]])
+```
+
+### RelProx Example: Categorical Category
+
+```{r}
+data <- law.school.admissions[1:20790,]
+proxyName <- 'lsat'      # proxy
+catName <- 'fam_inc'     # category
+nQuantls <- 5            # split 'lsat' into 4 groups
+quantls <- relativeProxy(data=data,proxyName=proxyName,catName=catName,nQuantls=nQuantls)
+head(quantls[[1]])
+```
+
+## 2. Predict Function
+
+`predict <- function(relProxObj, newCases, proxyName, catName) {}`
+
+### Merge data after getting relProxObj from relativeProxy()
+
+```{r}
+mergedData <- quantls[[1]]    # merge all split data together
+for (i in 2:length(quantls)) {
+  mergedData <- rbind(mergedData,quantls[[i]])
+}
+
+head(mergedData)
+```
+
+### Train qeKNN model on merged data
+
+> Use only the variables **fam_inc**, **lsat**, **ugpa**, **cluster** and **bar**, with that last one being the outcome ("Y") variable.
+
+```{r}
+yName <- 'bar'
+adjustedData <- mergedData
+adjustedData$lsat <- adjustedData$proxyCategory
+adjustedData <- adjustedData[,c('fam_inc','lsat','ugpa','cluster','bar')]
+
+model <- qeKNN(data=adjustedData, yName=yName)  # train qeKNN on ALL data
+```
+
+### Determine relative quantile of new data
+
+-   Determine the income group of the new person
+
+-   Find LSAT score percentile relative to income group
+
+-   Use trained knn model to predict "bar" with modified LSAT score group
+
+```{r}
+relProxObj <- quantls
+newCases <- law.school.admissions[20791:20800,!names(data) %in% c(yName)]
+newCases <- newCases[,c('fam_inc','lsat','ugpa','cluster')]
+rownames(newCases) <- 1:nrow(newCases) # drop target and re-index for new cases
+
+proxyName <- 'lsat'
+catName <- 'fam_inc'
+colnames(newCases)
+```
+
+### Predict BAR with trained qeKNN using adjusted score
+
+```{r}
+newCaseCats <- c()
+for (i in 1:nrow(newCases)) {
+  case <- newCases[i,]
+  caseCat <- case[,catName]
+  caseProxy <- case[,proxyName]
+  
+  # TODO: COMPARE TO THRESHOLD STORED SOMEWHERE
+  # Determine which df in relProxObj to compare to
+  df <- relProxObj[[1]] #########################
+  
+  
+  proxyList <- c(df[,proxyName], caseProxy)
+  proxyListLen <- length(proxyList)
+  percentile <- (rank(proxyList)/proxyListLen*100)[proxyListLen]
+  
+  # Determine which quantile the score falls within
+  numQuants <- length(levels(df$proxyCategory)) # number quantiles
+  iVal <- 100 / numQuants # size of range
+  mult <- caseProxy %/% iVal # use mod to find category
+  pQuantMin <- iVal*(mult)
+  pQuantMax <- iVal*(mult+1)
+  label <- paste("(",pQuantMin,", ",pQuantMax,"]",sep="") # i.e. "(20, 40]"
+  percentileQuant <- as.factor(label)
+  case$lsat <- percentileQuant
+  caseCat <- predict(model, case)$predClasses[1,1]
+  newCaseCats <- c(caseCat,newCaseCats) # predict class of new cases
+  
+  return(newCaseCats)
+}
+```
