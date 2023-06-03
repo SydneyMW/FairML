@@ -1,0 +1,44 @@
+library(qeML)
+library(regtools)
+library(tidyr)
+options(rgl.useNULL = TRUE)
+library(fairml)
+data('pef')
+
+pef1<-data.frame(factorsToDummies(pef,omitLast=TRUE))
+
+data <- pef1
+yName <- "wageinc"                      # we want to predict this
+sName <- "sex.1"                        # we will exclude this
+c1 <- "occ.100"                         # columns to deweigh
+c2 <- "occ.101"
+c3 <- "occ.102"
+c4 <- "occ.106"
+c5 <- "occ.140"
+vectLen <- length(cName)
+df <- data.frame(matrix(nrow=0,ncol=3))
+
+for (i in 1:10) {
+  D <- (0.1)*i
+  cat("Current D Value: ",D,"\n")
+  predicted <- qeKNN(data, yName, expandVars=c(c1,c2,c3,c4,c5), expandVals=c(D,D,D,D,D), scaleX=TRUE)
+  
+  # Measure utility by "testAcc" (error, will be high)
+  utility <- predicted$testAcc
+  
+  # Measure fairness by the Kendall correlation between sex and predicted Y (wage).
+  holdoutYPred <- predicted$holdoutPreds          # predicted y in holdout set
+  holdoutSVal <- data[predicted$holdIdxs,sName]   # snsitive var values in holdout set
+  fairness <- cor(holdoutYPred,holdoutSVal,method = 'kendall')
+  
+  # Store fairness and utility
+  df <- rbind.data.frame(c(D,fairness,utility), df)
+}
+
+colnames(df) <- c("Deweighing Factor","Fairness","Utility")
+
+plot(df[1:2])      # Plot D vs. Utility
+plot(df[c(1,3)])   # Plot D vs. Fairness
+
+
+

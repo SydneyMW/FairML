@@ -1,0 +1,109 @@
+---
+title: "L18"
+output: html_document
+date: "2023-06-01"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## [Fairness in Credit Scoring](https://arxiv.org/pdf/2103.01907.pdf)
+
+------------------------------------------------------------------------
+
+## 6 Empirical Results
+
+### Table 4
+
+Rank correlation between **evaluation metrics**
+
+-   AUC: area under curve; measure of accuracy
+
+-   Profit: \$\$
+
+-   IND: independence (between $y, \hat y$)
+
+-   SP: separation
+
+-   SF: sufficiency
+
+"Weak" correlation between Profit and SF ($R^2 = 0.16^2 = 0.03$)
+
+-   $R = corr(y, \hat y)$
+
+-   Misleading figure; correlation is near-zero
+
+### 6.1 Correlation Analysis
+
+Scorecards: predicted y (yhat)
+
+### Table 5
+
+Comparing performance gains from fairness-enhancing processor methods
+
+**Preprocessing**
+
+-   Reweighing: Reweighing is a pre-processor that assigns weights to each observation in the training set based on the overall probabilities of the group-class combinations
+
+-   Disparate impact factor: The intuition behind this processor is to ensure independence by prohibiting the possibility of predicting the sensitive attribute 𝑥𝑎 with the other features in 𝑋 and the outcome 𝑦. This is achieved by transforming 𝑋 into 𝑋 while preserving the rank of 𝑋 within sensitive groups defined by 𝑥𝑎. By preserving the rank of 𝑋 given 𝑥𝑎, the classification model 𝑓 (𝑋) will still learn to choose higher-ranked credit applications over lower-ranked ones based on the other features.
+
+**In-Processing**
+
+-   Prejudice remover
+
+-   Adversarial debiasing
+
+-   Meta fair algorithm
+
+**Post-Processing**
+
+-   Reject option classification
+
+-   Equalized odds processor
+
+-   Platt scaling
+
+## [Achieving Fairness with Simple Ridge Penalty](https://arxiv.org/pdf/2105.13817.pdf)
+
+Very technical, don't worry about the linear algebra details
+
+Goal: limit dependence between sensitive variable S and $\hat y$ (without limiting utility too much)
+
+Group fairness; justifies independence fairness criterion
+
+Lasso vs. Ridge motivations:
+
+-   Multicollinearity among features; features are highly correlated with each other
+
+-   Matrix is nearly singular (not invertible)
+
+Solutions:
+
+-   Don't use all features
+
+-   Perform feature selection with LASSO
+
+-   James & Stein: shrinking
+
+LASSO vs. Ridge
+
+-   L1: LASSO Constraint uses **Absolute Value** Error
+
+    -   $|\beta_1| + |\beta_2| \leq d$
+
+-   L2: Ridge Constraint uses **Sum Square** Error
+
+    -   $\beta_1^2 + \beta_2^2 \leq d$
+
+Process
+
+-   Use S to predict X
+
+-   Calculate the residuals: $U = X - \hat X$
+
+    -   These represent X without the effects of S
+
+-   Use U to predict Y
+
+    -   This represents using X without the effects of S to predict Y

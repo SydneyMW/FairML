@@ -1,0 +1,155 @@
+---
+title: "L14"
+output: html_document
+date: "2023-05-18"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## [Algorithmic fairness in computational medicine](https://www.sciencedirect.com/science/article/pii/S2352396422004327#bib0010)
+
+------------------------------------------------------------------------
+
+## Imbalanced Data
+
+Most data is in one class, so predictions are all 1 Instead of looking at actual predictions, look at probabilities (i.e. probability that each data point is 1)
+
+> In the context of algorithmic fairness, the use of resampling is not to address class imbalance, but rather to ensure that all demographic groups are properly and proportionately represented in the training dataset.
+
+### **Resampling**
+
+Example for some Class 1 (n = 10) and Class 2 (n = 990)
+
+-   **Downsampling:** use all members of Class 1 and randomly select 10 members of Class 2
+
+-   **Upsampling:** use all members of Class 2 and artificially duplicate sub-samples of Class 1 to make it 990
+
+**SMOTE**
+
+> Popular algorithms, like synthetic minority oversampling technique (SMOTE)[59](https://www.sciencedirect.com/science/article/pii/S2352396422004327#bib0059) or its variations, such as SMOTE-ENC,[60](https://www.sciencedirect.com/science/article/pii/S2352396422004327#bib0060) Borderline-SMOTE,[61](https://www.sciencedirect.com/science/article/pii/S2352396422004327#bib0061) can be used to oversample or synthetically expand the size of the data from an under-represented demographic group.
+>
+> However, healthcare data (such as EHRs or questionnaires) are typically complicated, and it is thus challenging to generate synthetic data without producing overfitting.[12](https://www.sciencedirect.com/science/article/pii/S2352396422004327#bib0012) 
+
+**Ideal Solution**
+
+> In addition to resampling, collecting more data with good planning is always the best solution.
+
+**Calibration:** how do we obtain probabilities from an ML algorithm which does not provide them?
+
+e.g. SVM does not provide a class prediction probability
+
+### Reweighting
+
+> Another method to train an algorithm to place a greater emphasis on an under-represented group is to use reweighting. This approach places different weights on each group-class combination based on the conditional probability of class by protected attribute, so that the protected attribute is independent of the outcome.
+
+## [Fairness in Credit Scoring](https://arxiv.org/pdf/2103.01907.pdf)
+
+------------------------------------------------------------------------
+
+Reasons not to use NNs:
+
+-   Explainability
+
+-   Tabular Data (NNs not recommended)
+
+Models should exploit properties of data
+
+-   Linear and logistic models, random forests exploit monotonicity in data
+
+-   KNN and maybe NNs do not exploit monotonicity
+
+-   NNs better for images, use tiling into sub-images
+
+Monotonicity: e.g. taller people tend to be heavier (correlations are also presuming some sort of monotonicity)
+
+### Abstract
+
+Code and data on github (project)
+
+### Introduction
+
+GDPR: concerned with protecting against discrimination
+
+Looks at three fairness criteria
+
+Usually, we want the predicted value to be independent of the sensitive attribute (e.g. recidivism probability should be independent of race)
+
+Claims that this is infeasible, due to low utility
+
+Middle ground: deweight a proxy, but not to the point that accuracy is too poor
+
+### 2. Theoretical Background
+
+### 2.1 Fairness Optimization in the Modeling Pipeline
+
+> In-processing methods introduce auxiliary fairness constraints during ML model training. Then, training involves minimizing the empirical risk of the model while also optimizing a fairness criterion.
+
+**Risk:** average loss over all data (overall misclassification rate)
+
+**Empirical Risk:** estimate expected risk using holdout set
+
+### 2.2 Fairness Criteria
+
+> Clearly, the value of 𝑥~𝑎~ must not impact the decision of the credit institution.
+
+MoritzHardt - Open-source Fairness in ML book
+
+Berk
+
+Barocas
+
+**3 Criterion of Fairness:**
+
+1.  Independence (usually not feasible)
+2.  Separation
+3.  Sufficiency
+
+#### 2.2.1 Independence
+
+> The score 𝑠(𝑋) satisfies independence at a cutoff 𝜏 if the fraction of customers classified as good risks (𝑦 = 1) is the same in each sensitive group.
+>
+> ...
+>
+> This strict constraint is usually not feasible for real-world applications like credit scoring, as the resulting loss in model performance can make a business unsustainable.
+
+Prediction is independent of sensitive attribute
+
+#### 2.2.2 Separation
+
+> The separation condition, also known as the equalized odds condition, is satisfied if the classification based on the predicted score 𝑠(𝑋) and the cutoff 𝜏 is independent on 𝑥𝑎 conditional on the true outcome 𝑦 (Barocas et al., 2019). Formally, the score 𝑠(𝑋) satisfies separation at a cutoff 𝜏 if:
+>
+> P [𝑠(𝑋 \| 𝑦 = 0, 𝑥𝑎 = 0) \> 𝜏] = P [𝑠(𝑋 \| 𝑦 = 0, 𝑥𝑎 = 1) \> 𝜏] P [𝑠(𝑋 \| 𝑦 = 1, 𝑥𝑎 = 0) ≤ 𝜏] = P [𝑠(𝑋 \| 𝑦 = 1, 𝑥𝑎 = 1) ≤ 𝜏]
+
+Retrospective analysis
+
+> Separation acknowledges that 𝑥𝑎 may be correlated with 𝑦 (e.g., applicants with a disability might can a higher default rate). However, the criterion prohibits the use of 𝑥𝑎 as a direct predictor for 𝑦. When the difference between group sizes is large, the criterion will punish models that perform well only on the majority group
+
+There may be correlation between sensitive and target variables, but we want to punish models that prefer/perform better on the majority group
+
+#### 2.2.3 Sufficiency
+
+> The score 𝑠(𝑋) is sufficient at a cutoff 𝜏 if the likelihood that an individual belonging to a positive class is classified as positive is the same for both sensitive groups (Barocas et al., 2019). This implies that for all values of 𝑠(𝑋) the following condition holds:
+>
+> P(𝑦 = 1 \| 𝑠(𝑋) \> 𝜏, 𝑥𝑎 = 0) = P(𝑦 = 1 \| 𝑠(𝑋) \> 𝜏, 𝑥𝑎 = 1)
+
+Report: use LaTeX
+
+With .tex and .bib sources, use BiBTeX for references
+
+The model should perform equally well across sensitive groups
+
+TDS:
+
+## **Independence - Equality of outcomes/selection**
+
+*Example: The acceptance rate of males and females should be the same!*
+
+## **Separation - Equality of Errors (Equality of outcomes given a threshold)**
+
+*Example: The rejection rate of males and females DESPITE being qualified enough for admission (false negative) should be the same!*
+
+## **Sufficiency - Choices reflect same accuracy per group (calibration)**
+
+*Example: The chances of males and females being qualified enough given the admission decision (predicted variable) should be the same!*

@@ -1,0 +1,26 @@
+---
+title: "Prison Population"
+output: html_document
+date: "2023-05-30"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+admissions <- read.csv("admissions_releases_states.csv")
+admissions
+```
+```{r}
+populations <- read.csv("populations_states.csv")
+populations
+```
+
+```{r}
+str(admissions)
+```
+```{r}
+str(populations)
+```
+

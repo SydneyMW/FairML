@@ -1,0 +1,11 @@
+---
+title: "L15"
+output: html_document
+date: "2023-05-23"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## [Fairness in Credit Scoring](https://arxiv.org/pdf/2103.01907.pdf)

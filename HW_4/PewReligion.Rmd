@@ -1,0 +1,33 @@
+---
+title: "Pew Research Religion"
+output: html_document
+date: "2023-05-26"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Fetching the dataset:
+
+-   Download the .SAV file from the [Pew Research Center's 2014 U.S. Religious Landscape Study](https://www.pewresearch.org/religion/dataset/pew-research-center-2014-u-s-religious-landscape-study/)
+-   Convert the .SAV file into .CSV format
+
+Colab option using python code if the file is too large:
+
+```{python}
+#!pip install pyreadstat
+#import pyreadstat
+#import pandas as pd
+#df = pd.read_spss("data.sav")
+#df.to_csv("data.csv", index=False)
+```
+
+In R: use "Import Dataset" from SAV and convert to CSV
+
+## Preprocessing the dataset:
+
+```{r}
+df <- read.csv("data.csv")
+head(df)
+```

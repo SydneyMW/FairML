@@ -1,0 +1,207 @@
+---
+title: "HW3"
+output: html_document
+date: "2023-05-19"
+editor_options: 
+  markdown: 
+    wrap: 72
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Homework 3
+
+# Due Tuesday, May 23, 11:59 pm
+
+# Problem 1 (of 1)
+
+## Motivation
+
+This problem is motivated by our class discussion of the "2.5X" factor
+in the *Pro Publica* analysis:
+
+> Defendants younger than 25 years old were 2.5 times as likely to get a
+> higher score than middle aged offenders, even when controlling for
+> prior crimes, future criminality, race and gender.
+
+Recall that this seemed odd to me, because the logistic model is
+nonlinear. Marginal effects like this depend on the values of the other
+features. The degree of impact of age, for instance, is different for
+different races, genders, and so on.
+
+After looking at the authors' code, I found that their 2.5X factor came
+from defining a base case consisting of 0s for all variables, including
+0s for the dummy variables. This is fine, but here you will develop
+something better.
+
+## Details
+
+Write a function with call form
+
+``` r
+conditDisparity(data,yName,sName,xName,condits,qeFtn,
+   minS=50,yLim=NULL,useLoess=TRUE) 
+```
+
+where the arguments are as follows:
+
+-   **data, yName:** as in qeML functions; Y must be numeric
+-   **xName:** name of a numeric column
+-   **sName:** name of the sensitive variable, an R factor
+-   **condits:** an R vector; each component is a character string for
+    an R logical expression, representing a desired condition; these
+    must NOT involve sName
+-   **qeFtn:** qeML function (will use default arguments only)
+-   **minS:** minimum S group size; if the number of data points for a
+    certain level of S is below this, that level will not be included
+-   **yLim:** a 2-element vector specifying the lower and upper vertical
+    bounds for the plot
+-   useLoess: see below
+
+```{r}
+compas$two_year_recid <- as.numeric(compas$two_year_recid == 'Yes')
+
+data <- compas
+yName <- 'two_year_recid'
+sName <- 'race'
+xName <- 'age'
+condits <- c('priors_count <= 4','decile_score >= 6')
+qeFtn <- qeKNN
+minS <- 50
+yLim <- NULL
+useLoess <- TRUE
+```
+
+Apply conditions to data
+
+```{r}
+data <- compas
+for (i in 1:length(condits)) { 
+  condit <- paste("data[which(data$",condits[i],"),]",sep="")
+  expr <- parse(text=condit)
+  data <- eval(expr)
+} # IT WORKS
+```
+
+Train qeFtn on data
+
+```{r}
+model <- qeFtn(data,yName)
+```
+
+Create categories for x (i.e. age): either unique values, or
+quantiles/some other method if continuous
+
+-   Option A: unique values (use this for age)
+
+-   Option B: make quantile cutoffs (helper function getDiv chooses an
+    ideal number of quantiles so that on average, there will be 10
+    people per category
+
+```{r}
+# OPTION B
+# Find ideal even number of x quantiles with enough ppl per group
+getDiv <- function(data, xName, dataLen) {
+  div <- 0
+  ratio <- 0
+  while(ratio < 10) { # We want at least a 10:1 ratio of data rows:categories
+    div <- div + 1
+    newCol <- data[[xName]] %/% div
+    numCats <- length(unique(newCol))
+    ratio <- dataLen/numCats
+  }
+  return(div)
+}
+```
+
+```{r}
+# OPTION B
+# Find percentile-based quantiles for x categories; return column
+getQuants <- function(data, xName, dataLen) {
+  quantSize <- getDiv(data, xName, dataLen)
+  div <- 10
+  quantCol <- ntile(data[,xName], div)
+  return(quantCol)
+}
+```
+
+```{r}
+dataLen <- length(data[[xName]])                # number rows
+uniqueXNum <- length(unique(data[[xName]]))     # number unique x values (i.e. ages)
+useUnique <- ifelse (dataLen/uniqueXNum > 10, TRUE, FALSE) # use unique values if each category has, on average, 10 data points
+
+# Define category column
+if (useUnique) { # Option A
+  data$xCats <- data[[xName]]
+} else {         # Option B
+  data$xCats <- getQuants(data, xName, dataLen)
+  #xRng <- max(data[[xName]]) - min(data[[xName]]) # i.e. 49
+  #data$xCats <- cut(data[[xName]], quantile(data[[xName]],probs=seq(0,1,1/quantSize),na.rm=TRUE), include.lowest=TRUE,labels=FALSE)
+}
+
+# Get unique categories as list
+xCats <- unique(data$xCats)
+
+# Subset data based on category, find mean probability for cat based on model preds
+for (i in 1:length(xCats)) {
+  x <- xCats[i]
+  xSubset <- data[which(data$xCats==x),]
+  xSubsetNoY <- xSubset[,!(names(xSubset) %in% c(yName))]
+  preds <- predict(model, xSubsetNoY)
+  avgCatPred <- mean(preds)
+}
+```
+
+For instance, for the *Pro Publica* analysis, a possible call could be
+(using the dataset **compas.rda** in our course data collection)
+
+``` ,r
+compas$two_year_recid <- as.numeric(compas$two_year_recid == 'Yes')
+conditDisparity(compas,'two_year_recid','race','age',
+   c('priors_count <= 4','decile_score>=6'),qeKNN)
+```
+
+This would produce a plot in which there is one curve of recidivism
+probability against age for each race, among defendants with at most 4
+priors and a decile score of at least 6. Here the regression function
+used for P(recidivism \| ...) is **qeKNN**.
+
+The role of the **yLim** argument is to set the vertical range of the
+plot. One must take care to avoid having a plot that cuts off the upper
+portion of some curves, or squashes all the curves together. One way,
+though not the only way, is to leave it in the user's hands, via this
+argument.
+
+*Loess* is a smoothing method. Curves like this will often be "bumpy,"
+due to sampling variation; the smaller the dataset, the bumpier. Loess
+smooths this out, essentially having each data point "borrow
+information" from the others.
+
+Running the above example produces:
+
+![Loess Curves: Age (x) vs. Recidivism Probability (y) based on qeKNN
+prediction](https://github.com/ucdavis/FairMLCourse/raw/main/Hwk/Hwk3.png)
+
+Of course, your code will also produce a legend, showing which color
+represents which level of S, and title/labels.
+
+The black (African-American) and blue (Hispanic) curves exhibit the
+behavior found by *Pro Publica*: During "middle age," the probability of
+recidivism declines. But the red curve (Caucasian) shows the opposite.
+This shows the importance of exploring interactions between variables.
+
+## Tips
+
+-   There are many "little details" to deal with here.
+
+-   It is imperative that you use a debugging tool to track down bugs.
+
+-   You may find the **subset()**, **evalr()** and
+    **sprintf()**functions useful.
+
+-   Be careful with data types. If you subset an R factor (whether or
+    not you use **subset()** to do so) to remove certain levels, the
+    latter will still appear in the output of **levels()**. Consider
+    using **regtools::toSubFactor()**.

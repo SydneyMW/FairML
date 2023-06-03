@@ -1,0 +1,80 @@
+---
+title: "Drug Use Prediction"
+output: html_document
+date: "2023-05-31"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Part B: Preprocessing and Data Analysis
+
+```{r}
+load("C:/Users/Sydney/Desktop/189G/FairML/drug.consumption.rda")
+data <- drug.consumption
+
+# Study only uses heroin, cocaine, crack, and ecstasy
+data <- data[,!names(data) %in% c("Alcohol", "Amphet","Amyl","Benzos","Caff","Cannabis","Choc", "Ketamine", "Legalh","LSD","Meth","Mushrooms","Nicotine","Semer","VSA")]
+```
+
+```{r}
+str(data)
+```
+
+```{r}
+head(data)
+```
+
+## Is the data unbalanced?
+
+```{r}
+library(patchwork)
+
+plotColumnFreq <- function(data) {
+  isFactor <- sapply(data, is.factor)
+  df <- data[,isFactor]
+  
+  for (i in 1:length(colnames(df))) {
+    col <- colnames(df)[i]
+    eval(parse(text=paste("summary",col," <- as.data.frame(summary(df$",col,"))", sep="")))
+    eval(parse(text=paste("summary",col,"$x <- row.names(summary",col,")", sep="")))
+    eval(parse(text=paste("colnames(summary",col,") <- c('freq','x')", sep="")))
+    eval(parse(text=paste("plot",col," <- ggplot(summary",col,", aes(x=x,y=freq,fill=x)) + geom_bar(stat='identity')+ theme(legend.title= element_blank(), axis.title.x = element_blank(), axis.title.y = element_blank(), axis.text.x = element_text(angle = 45, vjust = 1, hjust=1)) + ggtitle('",col,"')", sep="")))
+  }
+  
+  exec <- ""
+  for (i in 1:length(colnames(df))) {
+    col <- colnames(df[i])
+    if (i < length(colnames(df))) {
+      exec <- paste(exec, "plot",col," + ",sep="")
+    }
+    else {
+      exec <- paste(exec, "plot",col,sep="")
+    }
+  }
+  eval(parse(text=exec))
+}
+```
+
+**Unbalanced Categorical Columns**
+
+-   Age
+
+-   Education
+
+-   Country
+
+-   Race
+
+**Balanced Categorical Columns**
+
+-   Gender
+
+```{r}
+plotColumnFreq(data)
+```
+
+```{r}
+plotColumnFreq(data[c("Age","Education","Country","Race")])
+```

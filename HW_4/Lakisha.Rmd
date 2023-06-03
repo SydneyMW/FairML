@@ -1,0 +1,47 @@
+---
+title: "HW4"
+output: html_document
+date: "2023-05-25"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Are Emily and Greg More Employable than Lakisha and Jamal? A Field Experiment on Labor Market Discrimination
+
+Published by National Bureau of Economic Research [NBER](https://www.nber.org/papers/w9873)
+
+Data provided by [OpenICPSR](https://www.openicpsr.org/openicpsr/project/116023/version/V1/view)
+
+## 1. Fetch Data:
+
+-   Download "lakisha_aer.dta" from [OpenICPSR](https://www.openicpsr.org/openicpsr/project/116023/version/V1/view)
+
+-   Read dta file and write to csv
+
+```{r}
+library(haven)
+df <- read_dta("lakisha_aer.dta")
+head(df)
+write.csv(df, "lakisha.csv", row.names=FALSE)
+```
+
+## Analysis:
+
+```{r}
+df <- read.csv("lakisha.csv")
+df
+```
+
+```{r}
+colnames(df)
+```
+
+```{r}
+summary(df)
+```
+
+```{r}
+str(df)
+```

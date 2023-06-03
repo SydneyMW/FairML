@@ -1,0 +1,135 @@
+---
+title: "L13"
+output: html_document
+date: "2023-05-16"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Final Project
+
+-   Find a dataset which has been used in a published analysis (formally or informally)
+-   Attempt to perform the same analysis and compare your results to those published
+-   Main focus is not coding, but rather interpretation
+-   Write a professional-quality report
+    -   Appealing graphics
+
+    -   Interpretation (most important)
+
+        -   e.g. For Caucasians, the "middle age" group is more likely to recidivate, contrary to the published results which found reduced recidivism in that group
+
+## [**Algorithmic Fairness in Computational Medicine**](https://www.sciencedirect.com/science/article/pii/S2352396422004327#bib0043)
+
+(New Reading; survey paper)
+
+### **Introduction**
+
+> ...there is growing concern that machine learning algorithms may lead to unintended bias when making decisions involving ethnic minorities, both through the algorithms themselves and the data used to learn them. For example, associations between [Framingham risk](https://www.sciencedirect.com/topics/medicine-and-dentistry/framingham-risk-score "Learn more about Framingham risk from ScienceDirect's AI-generated Topic Pages") factors and cardiovascular events have been shown to be significantly different across different ethnic groups
+
+-   The above line is only referring to raw rates of cancer across groups, failing to look at covariates (they get to that later in the paper)
+
+-   Framingham Risk: famous longitudinal cardiology study in which risk score was developed to estimate risk of heart attack in 10 years
+
+**Types of Computational Bias**
+
+1.  Data Bias
+2.  Measurement Bias
+3.  Algorithm Bias
+
+### 1. Data Bias
+
+**Underrepresentation**
+
+-   People who are medically underserved (often racial minorities) don't have as many records
+
+-   People who are poor may:
+
+    -   be unable to afford health insurance
+
+    -   lack access to necessary transportation
+
+    -   be unable to miss work or other duties
+
+    -   ...and might consequently not seek treatment
+
+**What do we do about missing data?**
+
+**Imputation:** "guessing" values of missing data by imputing it with some value
+
+-   Imputing with the mean: e.g. if someone's height is missing, impute it with the mean height
+
+    -   Moves the data to the center, reducing relations between variables, and reducing the value of your study
+
+-   Using another variable to guess the value: e.g. using someone's height to guess their weight
+
+    -   Induces bias by distortion: e.g. if someone is tall and skinny, but most tall people are heavy, their weight will be overestimated and the imputation is biased
+
+**Types of Data Bias**
+
+-   **Sampling Bias:** Sampled dataset is not representative of the real environment where the model will be deployed
+
+-   **Allocation Bias:** If a particular treatment is expensive or inaccessible, people will not be equitably allocated the same treatments
+
+-   **Attrition Bias:** "Attrition means people give up" systematic differences in the way people are recruited for or are dropped from studies
+
+-   **Publication Bias:** Studies with statistically significant results are easier/more likely to be published
+
+### **2. Measurement Bias**
+
+> Measurement bias is a systematic error that occurs when the data are labeled inconsistently, or study variables (e.g., disease, exposure) are collected or measured inaccurately. A recent example is the large disparity in the quality of COVID-19 data reported across India.
+>
+> One of the common causes of measurement bias is response bias. In the clinical context, response bias usually occurs in studies involving surveys or self-reported data. When respondents tend to give inaccurate or even wrong answers on self-reported questions, the survey results will be affected. An example of response bias is that people might tend to always rate themselves favorably or feel pressured to provide socially acceptable answers. In addition, misleading questions can lead to biased answers. In addition, demographic groups who are willing to answer survey questions are sometimes different from those who are not. Consequently, this will impact the machine learning algorithms trained on surveys or patient reported outcomes.
+
+### **3. Algorithm Bias**
+
+> Another source of bias is from the algorithms themselves,31 which can be algorithm specific or agnostic. Algorithm specific bias is linked to their intrinsic hypotheses.
+
+**Algorithm Specific Bias:**
+
+-   Linear and logistic regression models assume the relationships between input and target variables are linear or logistic, respectively, which is not always true
+
+-   Algorithms will try to reduce loss, where all sample losses are equally weighted
+
+-   Solutions:
+
+    -   Upsample underrepresented group(s)/downsample overrepresented group(s)
+
+    -   Use polynomial model - need to worry about overfitting
+
+### **Fairness Metrics**
+
+e.g. trying to eliminate effects of race on sentences
+
+-   **Fairness through unawareness:** if concerned about the effects of race, "just don't use race"
+
+    -   Does not account for proxies
+
+-   **Demographic parity:** Requires that "overall proportion of individuals in a protected group predicted as positive (or negative) to be the same as that of the overall population"
+
+-   **Equalized Odds:** TP and TN rates are the same across all races up to a fixed tolerance T
+
+    -   More flexible than demographic parity "as it does not prevent learning a predictor where there is a real association between the protected attribute and the outcome"
+
+-   **Equal Opportunity:** a white and a black person with all other idential traits should be given equal sentences
+
+    -   People with similar charactaristics should be treated similarly
+
+    -   In Matloff's opinion, the only reasonable one
+
+-   **Individual Fairness:** "based on the principle that any two individuals who are similar in the context of a given task should be treated similarly"
+
+    -   Individual fairness is "more restrictive than group fairness defined by the protected attribute"
+
+    -   In practice, "limited due to the challenges of defining an appropriate similarity metric to encode the desired concept of fairness"
+
+    -   Arguments that it is "inadequate, as similar treatment are not enough to achieve fairness"
+
+-   **Counterfactual Measures:** "a model is fair if its predictions about a particular individual in the real world is the same as it would be in a counterfactual world (i.e., in this case, if the patient's ethnic group was changed from Black to white)"
+
+    -   Some studies indivate the it is "susceptible to similar biases as outcome bias (evaluating the quality of decisions when the outcome is known)"
+
+    -   Suggested that it "may negatively affect the process of causality identification"
+
+    -   Causality identification: trying to determine what correlated variables are actually responsible for a particular effect on the target

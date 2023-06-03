@@ -10,13 +10,15 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ## ROC
 
-Receiver Operating Curve
+Receiver Operating Curve: Plots the diagnostic abilities of a binary classifier with various threshold settings
 
--   X-axis: True Negative Rate
+-   X-axis: False Positive Rate
 
 -   Y-axis: True Positive Rate
 
 -   AUC: Area Under the Curve (large values are ideal)
+
+Ideally, as false positive rates go up, true positive rates will increase even more, yielding a large area under the curve (AUC)
 
 Problem: All X-axis values are equally weighted
 

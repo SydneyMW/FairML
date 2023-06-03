@@ -1,0 +1,184 @@
+---
+title: "HW3md"
+output: html_document
+date: "2023-05-21"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(qeML)
+library(fairml)
+library(dplyr)
+library(ggplot2)
+data(compas)
+compas$two_year_recid <- as.numeric(compas$two_year_recid == 'Yes')
+
+data <- compas
+yName <- 'two_year_recid'
+sName <- 'race'
+xName <- 'age'
+condits <- c('priors_count <= 4','decile_score >= 6')
+qeFtn <- qeKNN
+minS <- 50
+yLim <- NULL
+useLoess <- TRUE
+```
+
+Apply conditions to data
+
+```{r}
+data <- compas
+for (i in 1:length(condits)) { 
+  condit <- paste("data[which(data$",condits[i],"),]",sep="")
+  expr <- parse(text=condit)
+  data <- eval(expr)
+} # IT WORKS
+```
+
+Train qeFtn on data
+
+```{r}
+model <- qeFtn(data,yName)
+```
+
+Create categories for x (i.e. age): either unique values, or quantiles/some other method if continuous
+
+-   Option A: unique values (use this for age)
+
+-   Option B: make quantile cutoffs (helper function getDiv chooses an ideal number of quantiles so that on average, there will be 10 people per category
+
+```{r}
+# OPTION B
+# Find ideal even number of x quantiles with enough ppl per s-group
+getDiv <- function(data, xName, dataLen) {
+  div <- 0
+  ratio <- 0
+  while(ratio < 20) { # We want at least a 10:1 ratio of data rows:categories
+    div <- div + 1
+    newCol <- data[[xName]] %/% div
+    numCats <- length(unique(newCol))
+    ratio <- dataLen/numCats
+  }
+  return(div)
+}
+```
+
+```{r}
+# OPTION B
+# Find percentile-based quantiles for x categories; return column
+getQuants <- function(data, xName, dataLen) {
+  quantSize <- getDiv(data, xName, dataLen)
+  quantCol <- ntile(data[,xName], quantSize)
+  return(quantCol)
+}
+```
+
+Get recidivism/y probabilities for each age category
+
+TODO: collect and plot
+
+```{r}
+dataLen <- length(data[[xName]])                # number rows
+uniqueXNum <- length(unique(data[[xName]]))     # number unique x values (i.e. ages)
+
+useUnique <- TRUE
+#useUnique <- ifelse (dataLen/uniqueXNum > 10, TRUE, FALSE) # use unique values if each category has, on average, 10 data points
+
+# Define category column
+if (useUnique) { # Option A
+  data$xCats <- data[[xName]]
+} else {         # Option B
+  data$xCats <- getQuants(data, xName, dataLen)
+  #xRng <- max(data[[xName]]) - min(data[[xName]]) # i.e. 49
+  #data$xCats <- cut(data[[xName]], quantile(data[[xName]],probs=seq(0,1,1/quantSize),na.rm=TRUE), include.lowest=TRUE,labels=FALSE)
+}
+
+# Get unique categories as list
+xCats <- unique(data$xCats)
+sCats <- unique(data[,sName])
+sCatPreds <- data.frame(matrix(nrow=length(xCats),ncol=length(sCats)+1))
+sCatPreds[,1] <- xCats # Column 1: x category
+
+# Subset data based on category, find mean probability for cat based on model preds
+for (i in 1:length(xCats)) {
+  x <- xCats[i]
+  xSubset <- data[which(data$xCats==x),]
+  xSubset <- xSubset[,!(names(xSubset) %in% c(yName,'xCats'))]
+  
+  #allPreds <- predict(model, xSubset)
+  #avgAllPreds <- mean(allPreds)
+  
+  predList <- c(x)
+  for (j in 1:length(sCats)) { # fill in remaining columns with s-respective mean preds
+    sCat <- sCats[j]
+    xsSubset <- xSubset[which(xSubset[ ,sName]==sCats[j]),]
+    if (nrow(xsSubset) > 0) {
+      sPreds <- predict(model, xsSubset)
+      sPredsList <- sPreds[1,]
+      avgSPreds <- mean(sPredsList)
+      #predList <- c(predList,avgSPreds)
+      sCatPreds[i,(j+1)] <- avgSPreds
+    }
+  }
+}
+
+# TODO: convert numeric encoding to race names for the plot
+colnames(sCatPreds) <- c('xCat', sCats)
+```
+
+Plot
+
+TODO: NEEDS SMOOTHING, DESPARATELY
+
+TODO: add race labels based
+
+```{r}
+predsMelt <- melt(sCatPreds,id.vars='xCat', variable.name = 'series')
+
+#create line plot for each column in data frame
+ggplot(predsMelt, aes(xCat, value)) +
+  geom_line(aes(colour = series))
+```
+
+Alternative Plotting (base R)
+
+```{r}
+plot(sCatPreds[c(1,2)], col="red")
+
+points(sCatPreds[c(1,3)], col="orange")
+points(sCatPreds[c(1,4)], col="yellow")
+points(sCatPreds[c(1,5)], col="green")
+points(sCatPreds[c(1,6)], col="blue")
+points(sCatPreds[c(1,7)], col="purple")
+```
+
+Loess Smoothing
+
+```{r}
+LoessDf <- sCatPreds
+LoessDf <- LoessDf[order(LoessDf$xCat),]
+
+colorList <- rainbow(length(colnames(LoessDf))-1)
+
+#xLim <- c(min(LoessDf$xCat), max(LoessDf$xCat))
+#yLim <- c(0, 100)
+
+plot(LoessDf$xCat, LoessDf$y, pch=19, main='Race-Stratified Recidivism Predictions for each Age Group', col="white")
+#plot.window(xlim=xLim, ylim=yLim)
+for (i in 2:(length(colnames(LoessDf)))) {
+  yColName <- colnames(LoessDf)[i]
+  TestDf <- LoessDf[,c('xCat',yColName)]
+  TestDf$y <- LoessDf[,yColName]
+  TestDf <- na.omit(TestDf)
+  
+  loess50 <- loess(xCat ~ y, TestDf, span=0.8)
+  smooth50 <- predict(loess50)
+  lines(smooth50, x=TestDf$xCat, col=colorList[i-1])
+}
+
+legend('bottomright', legend=sCats,
+        col=colorList, pch=19, title='Sensitive Variable Groups')
+```

@@ -1,0 +1,49 @@
+---
+title: "L17"
+output: html_document
+date: "2023-05-30"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## [Fairness in Credit Scoring](https://arxiv.org/pdf/2103.01907.pdf)
+
+------------------------------------------------------------------------
+
+## 4.3 Post-Processors
+
+### Reject option classification
+
+Post-processing method
+
+-   Perverse Incentives
+
+### Platt Scaling
+
+Post-processing method
+
+-   Not about ML; general ML issue
+
+-   Some algorithms do not generate probabilities for their predictions
+
+-   Stems from calibration; Method of generating probability for output of SVM
+
+-   May want to generate an expected value (i.e. how much they will repay)
+
+## 5.1 Data
+
+Kaggle credit scoring datasets
+
+Table 2: describes 7 datasets
+
+-   p: number features
+
+-   n: sample size
+
+-   p/n: large ratio indicates overfitting likely
+
+-   Ideally, $p < \sqrt n$
+
+-   Low default rates $< 0.10$ indicate unbalanced data

@@ -15,9 +15,6 @@ knitr::opts_chunk$set(echo = TRUE)
 **Overfitting Definitions**
 
 -   Overfitted models predict poorly on new examples
-
-<!-- -->
-
 -   "Fitting the noise"
 
 **Bias-Variance Tradeoff**: we have a finite amount of data, which carries with it some sampling error; samples vary from each other (S.E.)
@@ -68,6 +65,10 @@ Sampling Variance measures variance of estimated r(t) between different samples
 
 ### U-Shaped Curve
 
+[URL](https://felperez.github.io/posts/2020/03/blog-post-31/)
+
+![](images/ushaped.png)
+
 Complexity (x) and MSE (y) typically has a U-Shape
 
 -   Going right (increasing complexity), bias decreases as variance increases; Model gets more accurate/reduced error
@@ -103,14 +104,14 @@ After fitting degrees 1 through 12, variance [1,] and error [2,]:
 
 -   Error decreases, and then increases, as in characteristic U-Shape
 
-<!-- -->
-
-               [,1]       [,2]       [,3]       [,4]       [,5]       [,6]
-    [1,] 0.02440784 0.02718803 0.03184419 0.04229401 0.04945168 0.05450264
-    [2,] 7.86296820 7.74149419 7.74222432 7.66320622 7.70638321 7.69907202
-               [,7]       [,8]     [,9]        [,10]    [,11]    [,12]
-    [1,] 0.06572677 0.07980077 0.114887 -0.008906266       NA       NA
-    [2,] 7.73367546 7.70928618 7.733230  7.793813681 9.980302 17.36951
+```         
+           [,1]       [,2]       [,3]       [,4]       [,5]       [,6]
+[1,] 0.02440784 0.02718803 0.03184419 0.04229401 0.04945168 0.05450264
+[2,] 7.86296820 7.74149419 7.74222432 7.66320622 7.70638321 7.69907202
+           [,7]       [,8]     [,9]        [,10]    [,11]    [,12]
+[1,] 0.06572677 0.07980077 0.114887 -0.008906266       NA       NA
+[2,] 7.73367546 7.70928618 7.733230  7.793813681 9.980302 17.36951
+```
 
 ### Overfitting with High Accuracy
 
@@ -127,3 +128,43 @@ After fitting degrees 1 through 12, variance [1,] and error [2,]:
 Instead of a U, we observe two or more "U-Shapes"
 
 > The phenomenon of double descent is sometimes observed, in which the familiar graph of test set accuracy vs. model complexity consists of two U shapes rather than one. The most intriguing cases are those in which the first U ends at a point where the model fully interpolates the training data, i.e. 0 training error--and yet even further complexity actually reduces test set error.
+
+## Bias Variance Tradeoff
+
+### [Towards Data Science](https://towardsdatascience.com/understanding-the-bias-variance-tradeoff-165e6942b229)
+
+> **What is bias?**
+>
+> Bias is the difference between the average prediction of our model and the correct value which we are trying to predict. **Model with high bias pays very little attention to the training data and oversimplifies the model.** It always leads to **high error on training and test data.**
+>
+> **What is variance?**
+>
+> Variance is the variability of model prediction for a given data point or a value which tells us spread of our data. **Model with high variance pays a lot of attention to training data** and does not generalize on the data which it hasn't seen before. As a result, **such models perform very well on training data but has high error rates on test data.**
+
+### [Wikipedia](https://en.wikipedia.org/wiki/Bias%E2%80%93variance_tradeoff)
+
+> -   The [*bias*](https://en.wikipedia.org/wiki/Bias_of_an_estimator "Bias of an estimator") error is an error from erroneous assumptions in the learning [algorithm](https://en.wikipedia.org/wiki/Algorithm "Algorithm"). High bias can cause an algorithm to miss the relevant relations between features and target outputs (underfitting).
+>
+> -   The [*variance*](https://en.wikipedia.org/wiki/Variance "Variance") is an error from sensitivity to small fluctuations in the training set. High variance may result from an algorithm modeling the random [noise](https://en.wikipedia.org/wiki/Noise_(signal_processing) "Noise (signal processing)") in the training data ([overfitting](https://en.wikipedia.org/wiki/Overfitting "Overfitting")).
+
+**Summary:**
+
+**High bias, low variance:**
+
+-   Model is very basic and underfitted
+
+-   High error in BOTH training and testing
+
+-   High bias - training prediction error is large
+
+-   Low variance - model is very insensitive to patterns/noise
+
+**Low bias, high variance:**
+
+-   Model is very complex and overfitted
+
+-   Low training error but high testing error
+
+-   Low bias - training prediction error is small
+
+-   High variance - model predictions are very sensitive to noise

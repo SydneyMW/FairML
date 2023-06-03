@@ -29,11 +29,7 @@ head(mlb)
 **Arguments:**
 
 -   Formal arg: \<y name\>
-
-<!-- -->
-
 -   Actual arg: 'Weight'
-
 -   Optional args: have default values or NA
 
 ### Example: KNN, Random Forest Train
