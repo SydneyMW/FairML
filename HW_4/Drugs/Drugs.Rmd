@@ -15,7 +15,7 @@ load("C:/Users/Sydney/Desktop/189G/FairML/drug.consumption.rda")
 data <- drug.consumption
 
 # Study only uses heroin, cocaine, crack, and ecstasy
-data <- data[,!names(data) %in% c("Alcohol", "Amphet","Amyl","Benzos","Caff","Cannabis","Choc", "Ketamine", "Legalh","LSD","Meth","Mushrooms","Nicotine","Semer","VSA")]
+data <- data[,!names(data) %in% c("Amphet","Amyl","Benzos","Caff","Cannabis","Choc", "Ketamine", "Legalh","LSD","Meth","Mushrooms","Nicotine","Semer","VSA")]
 ```
 
 ```{r}
@@ -77,4 +77,15 @@ plotColumnFreq(data)
 
 ```{r}
 plotColumnFreq(data[c("Age","Education","Country","Race")])
+```
+
+```{r}
+data$NoDrugUse <- data$Heroin == "Never Used" & data$Crack == "Never Used" & data$Coke == "Never Used" & data$Ecstasy == "Never Used"
+data$NoAlcohol <- data$Alcohol == "Never Used"
+
+dataNN <- data[,!names(data) %in% c("Ecstasy","Heroin","Coke","Crack","Alcohol")]
+```
+
+```{r}
+model <- qeNeural(dataNN, yName="NoDrugUse")
 ```
