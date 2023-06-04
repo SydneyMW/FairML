@@ -1,5 +1,6 @@
 library(patchwork)
 library(fairml)
+library(corrplot)
 load("C:/Users/Sydney/Desktop/189G/FairML/drug.consumption.rda")
 data <- drug.consumption
 
